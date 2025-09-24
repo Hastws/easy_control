@@ -218,8 +218,8 @@ namespace autoalg {
         }
 
         // ---------- Info / sync ----------
-        inline std::size_t DisplayWidth() const { return display_x_; }
-        inline std::size_t DisplayHeight() const { return display_y_; }
+        inline std::size_t GetDisplayWidth() const { return display_x_; }
+        inline std::size_t GetDisplayHeight() const { return display_y_; }
         inline int CursorX() const { return cur_x_; }
         inline int CursorY() const { return cur_y_; }
 
