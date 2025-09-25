@@ -18,7 +18,7 @@ struct Monitor {
   int x, y, w, h;
 };
 
-inline int mask_shift(unsigned long mask) {
+EC_INLINE int mask_shift(unsigned long mask) {
   int s = 0;
   while (mask && !(mask & 1)) {
     mask >>= 1;
@@ -27,7 +27,7 @@ inline int mask_shift(unsigned long mask) {
   return s;
 }
 
-inline uint8_t extract_chan(unsigned long pixel, unsigned long mask) {
+EC_INLINE uint8_t extract_chan(unsigned long pixel, unsigned long mask) {
   if (!mask) return 0;
   int s = mask_shift(mask);
   unsigned long v = (pixel & mask) >> s;
@@ -42,7 +42,7 @@ inline uint8_t extract_chan(unsigned long pixel, unsigned long mask) {
   return uint8_t((v * 255U) / ((1U << bits) - 1U));
 }
 
-inline void alpha_blend(uint8_t *dst, const uint8_t src[4]) {
+EC_INLINE void alpha_blend(uint8_t *dst, const uint8_t src[4]) {
   const float a = src[3] / 255.0f;
   dst[0] = uint8_t(src[0] * a + dst[0] * (1 - a));
   dst[1] = uint8_t(src[1] * a + dst[1] * (1 - a));

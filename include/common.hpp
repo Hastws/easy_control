@@ -17,6 +17,8 @@
 #include <thread>
 #include <vector>
 
+#include "macro.h"
+
 #if defined(_WIN32)
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -47,25 +49,25 @@ namespace autoalg {
 // Thread & Time
 // =====================
 
-inline void SleepSeconds(const unsigned int s) { std::this_thread::sleep_for(std::chrono::seconds(s)); }
+EC_INLINE void SleepSeconds(const unsigned int s) { std::this_thread::sleep_for(std::chrono::seconds(s)); }
 
-inline void SleepMillis(const unsigned int ms) { std::this_thread::sleep_for(std::chrono::milliseconds(ms)); }
+EC_INLINE void SleepMillis(const unsigned int ms) { std::this_thread::sleep_for(std::chrono::milliseconds(ms)); }
 
-inline void ThreadYield() { std::this_thread::yield(); }
+EC_INLINE void ThreadYield() { std::this_thread::yield(); }
 
-inline uint64_t NowUnixMillis() {
+EC_INLINE uint64_t NowUnixMillis() {
   using namespace std::chrono;
   return duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 }
 
-inline uint64_t NowSteadyMillis() {
+EC_INLINE uint64_t NowSteadyMillis() {
   using namespace std::chrono;
   return duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
 }
 
-inline uint64_t ThisThreadId() { return std::hash<std::thread::id>{}(std::this_thread::get_id()); }
+EC_INLINE uint64_t ThisThreadId() { return std::hash<std::thread::id>{}(std::this_thread::get_id()); }
 
-inline unsigned NumHWThreads() {
+EC_INLINE unsigned NumHWThreads() {
   const unsigned n = std::thread::hardware_concurrency();
   return n ? n : 1u;
 }
@@ -75,28 +77,28 @@ inline unsigned NumHWThreads() {
 // =====================
 
 #if defined(_WIN32)
-inline constexpr char PathSep() { return '\\'; }
+EC_INLINE constexpr char PathSep() { return '\\'; }
 #else
-inline constexpr char PathSep() { return '/'; }
+EC_INLINE constexpr char PathSep() { return '/'; }
 #endif
 
-inline bool FileExists(const std::filesystem::path &p) {
+EC_INLINE bool FileExists(const std::filesystem::path &p) {
   std::error_code ec;
   return std::filesystem::exists(p, ec);
 }
 
-inline bool CreateDirs(const std::filesystem::path &p) {
+EC_INLINE bool CreateDirs(const std::filesystem::path &p) {
   std::error_code ec;
   return std::filesystem::create_directories(p, ec) || std::filesystem::exists(p, ec);
 }
 
-inline bool RemoveFile(const std::filesystem::path &p) {
+EC_INLINE bool RemoveFile(const std::filesystem::path &p) {
   std::error_code ec;
   return std::filesystem::remove(p, ec);
 }
 
 // Executable absolute path (no PATH_MAX)
-inline std::filesystem::path ExecutablePath() {
+EC_INLINE std::filesystem::path ExecutablePath() {
 #if defined(_WIN32)
   std::wstring buf(256, L'\0');
   for (;;) {
@@ -136,7 +138,7 @@ inline std::filesystem::path ExecutablePath() {
 }
 
 // User home directory
-inline std::filesystem::path HomeDir() {
+EC_INLINE std::filesystem::path HomeDir() {
 #if defined(_WIN32)
   PWSTR wpath = nullptr;
   if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_Profile, 0, nullptr, &wpath)) && wpath) {
@@ -153,7 +155,7 @@ inline std::filesystem::path HomeDir() {
 }
 
 // Temporary directory
-inline std::filesystem::path TempDir() {
+EC_INLINE std::filesystem::path TempDir() {
   std::error_code ec;
   auto p = std::filesystem::temp_directory_path(ec);
   return ec ? std::filesystem::path{} : p;
@@ -165,7 +167,7 @@ inline std::filesystem::path TempDir() {
 
 #if defined(_WIN32)
 namespace detail {
-inline std::wstring Utf8ToW(std::string_view s) {
+EC_INLINE std::wstring Utf8ToW(std::string_view s) {
   if (s.empty()) return std::wstring();
   int wlen = MultiByteToWideChar(CP_UTF8, 0, s.data(), static_cast<int>(s.size()), nullptr, 0);
   std::wstring w(wlen, L'\0');
@@ -173,7 +175,7 @@ inline std::wstring Utf8ToW(std::string_view s) {
   return w;
 }
 
-inline std::string WToUtf8(std::wstring_view w) {
+EC_INLINE std::string WToUtf8(std::wstring_view w) {
   if (w.empty()) return std::string();
   int len = WideCharToMultiByte(CP_UTF8, 0, w.data(), static_cast<int>(w.size()), nullptr, 0, nullptr, nullptr);
   std::string s(len, '\0');
@@ -183,7 +185,7 @@ inline std::string WToUtf8(std::wstring_view w) {
 }  // namespace detail
 #endif
 
-inline std::string GetEnv(std::string_view key) {
+EC_INLINE std::string GetEnv(std::string_view key) {
 #if defined(_WIN32)
   std::wstring wkey = detail::Utf8ToW(key);
   DWORD n = GetEnvironmentVariableW(wkey.c_str(), nullptr, 0);
@@ -198,7 +200,7 @@ inline std::string GetEnv(std::string_view key) {
 #endif
 }
 
-inline bool SetEnv(std::string_view key, std::string_view val, bool overwrite = true) {
+EC_INLINE bool SetEnv(std::string_view key, std::string_view val, bool overwrite = true) {
 #if defined(_WIN32)
   std::wstring wkey = detail::Utf8ToW(key);
   std::wstring wval = detail::Utf8ToW(val);
@@ -212,7 +214,7 @@ inline bool SetEnv(std::string_view key, std::string_view val, bool overwrite = 
 #endif
 }
 
-inline bool UnsetEnv(std::string_view key) {
+EC_INLINE bool UnsetEnv(std::string_view key) {
 #if defined(_WIN32)
   std::wstring wkey = detail::Utf8ToW(key);
   return SetEnvironmentVariableW(wkey.c_str(), nullptr) != 0;
@@ -225,7 +227,7 @@ inline bool UnsetEnv(std::string_view key) {
 // Memory
 // =====================
 
-inline size_t PageSize() {
+EC_INLINE size_t PageSize() {
 #if defined(_WIN32)
   SYSTEM_INFO si;
   GetSystemInfo(&si);
@@ -236,7 +238,7 @@ inline size_t PageSize() {
 #endif
 }
 
-inline void *AlignedAlloc(size_t alignment, size_t size) {
+EC_INLINE void *AlignedAlloc(size_t alignment, size_t size) {
 #if defined(_WIN32)
   return _aligned_malloc(size, alignment);
 #else
@@ -246,7 +248,7 @@ inline void *AlignedAlloc(size_t alignment, size_t size) {
 #endif
 }
 
-inline void AlignedFree(void *p) {
+EC_INLINE void AlignedFree(void *p) {
 #if defined(_WIN32)
   _aligned_free(p);
 #else
@@ -301,7 +303,7 @@ struct DynLib {
 // Errors
 // =====================
 
-inline std::string LastErrorString() {
+EC_INLINE std::string LastErrorString() {
 #if defined(_WIN32)
   DWORD err = GetLastError();
   if (!err) return {};
@@ -331,7 +333,7 @@ inline std::string LastErrorString() {
 // Process info (lightweight extras)
 // =====================
 
-inline uint32_t ProcessId() {
+EC_INLINE uint32_t ProcessId() {
 #if defined(_WIN32)
   return static_cast<uint32_t>(::GetCurrentProcessId());
 #else
@@ -340,7 +342,7 @@ inline uint32_t ProcessId() {
 }
 
 // Current working directory (safe with error_code)
-inline std::filesystem::path CurrentDir() {
+EC_INLINE std::filesystem::path CurrentDir() {
   std::error_code ec;
   auto p = std::filesystem::current_path(ec);
   return ec ? std::filesystem::path{} : p;

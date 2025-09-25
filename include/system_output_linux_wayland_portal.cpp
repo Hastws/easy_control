@@ -12,7 +12,7 @@
 #include "system_output.hpp"
 
 // Detect if WAYLAND is active
-static inline bool is_wayland() {
+static EC_INLINE bool is_wayland() {
   const char* wl = std::getenv("WAYLAND_DISPLAY");
   return wl && *wl;
 }
