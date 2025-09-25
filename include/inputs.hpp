@@ -70,7 +70,7 @@
 #include "common.hpp"
 
 namespace autoalg {
-class Input {
+class SystemInput {
  public:
   enum MouseButton : int { kLeft = 0, kRight = 1, kMiddle = 2 };
 
@@ -83,7 +83,7 @@ class Input {
   };
 
   // Construction / destruction.
-  inline Input() {
+  inline SystemInput() {
 #ifdef __APPLE__
     CGDirectDisplayID did = CGMainDisplayID();
     display_x_ = CGDisplayPixelsWide(did);
@@ -179,7 +179,7 @@ class Input {
 #endif
   }
 
-  inline ~Input() {
+  inline ~SystemInput() {
 #if defined(__linux__)
 #ifdef INPUT_BACKEND_WAYLAND_WLR
     if (vkb_dev_) {
@@ -1007,7 +1007,7 @@ class Input {
   std::size_t display_x_{0};
   std::size_t display_y_{0};
 
-  // 在 class Input 的 private: 区域里加上：
+  // 在 class SystemInput 的 private: 区域里加上：
 
   inline void EmitDragPath_(int start_x, int start_y, int end_x, int end_y, int button) {
     // 线性插值若干步，逐步发出“拖拽中的移动事件”
@@ -1230,7 +1230,7 @@ class Input {
   zwp_virtual_keyboard_v1 *vkb_dev_{nullptr};
 
   static void RegistryGlobal_(void *data, wl_registry *reg, uint32_t name, const char *interface, uint32_t version) {
-    auto *self = static_cast<Input *>(data);
+    auto *self = static_cast<SystemInput *>(data);
     if (strcmp(interface, wl_seat_interface.name) == 0) {
       self->wl_seat_ = static_cast<wl_seat *>(wl_registry_bind(reg, name, &wl_seat_interface, 1));
     } else if (strcmp(interface, zwlr_virtual_pointer_manager_v1_interface.name) == 0) {
