@@ -36,13 +36,13 @@ class ScreenCapture {
 // macOS bridge (.mm library you build separately)
 #if defined(__APPLE__)
 extern "C" {
-struct AutoAlg_MacImage {
+struct MacImage {
   int width;
   int height;
   uint8_t* pixels;  // RGBA, malloc'ed
 };
-int AutoAlg_MacCaptureScreenWithCursor(int displayIndex, AutoAlg_MacImage* outImage);
-void AutoAlg_MacFreeImage(AutoAlg_MacImage* img);
+int MacCaptureScreenWithCursor(int displayIndex, MacImage* outImage);
+void MacFreeImage(MacImage* img);
 }
 #endif
 

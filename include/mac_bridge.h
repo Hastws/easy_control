@@ -2,7 +2,9 @@
 // Author: Chunzhi Qu.
 // SPDX-License-Identifier: MIT.
 
-#pragma once
+#ifndef EASY_CONTROL_INCLUDE_MAC_BRIDGE_H
+#define EASY_CONTROL_INCLUDE_MAC_BRIDGE_H
+
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -13,12 +15,14 @@ typedef struct {
   int width;
   int height;
   uint8_t *pixels;  // RGBA, malloc'ed
-} AutoAlg_MacImage;
+} MacImage;
 
-int AutoAlg_MacCaptureScreenWithCursor(int displayIndex, AutoAlg_MacImage *outImage);
+int MacCaptureScreenWithCursor(int displayIndex, MacImage *outImage);
 
-void AutoAlg_MacFreeImage(AutoAlg_MacImage *img);
+void MacFreeImage(MacImage *img);
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
