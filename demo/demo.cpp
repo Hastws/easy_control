@@ -16,8 +16,7 @@
 static bool SaveRAW_RGBA(const std::string& path, const std::vector<uint8_t>& rgba) {
   std::ofstream f(path, std::ios::binary);
   if (!f) return false;
-  f.write(reinterpret_cast<const char*>(rgba.data()),
-          static_cast<std::streamsize>(rgba.size()));
+  f.write(reinterpret_cast<const char*>(rgba.data()), static_cast<std::streamsize>(rgba.size()));
   return f.good();
 }
 
@@ -27,26 +26,25 @@ struct BMPFileHeader {
   uint32_t bfSize{};
   uint16_t bfReserved1{};
   uint16_t bfReserved2{};
-  uint32_t bfOffBits{54};   // 14 (file) + 40 (info)
+  uint32_t bfOffBits{54};  // 14 (file) + 40 (info)
 };
 struct BMPInfoHeader {
   uint32_t biSize{40};
-  int32_t  biWidth{};
-  int32_t  biHeight{};      // 负值 = top-down（上到下）
+  int32_t biWidth{};
+  int32_t biHeight{};  // 负值 = top-down（上到下）
   uint16_t biPlanes{1};
-  uint16_t biBitCount{32};  // 32-bit
-  uint32_t biCompression{0}; // BI_RGB
+  uint16_t biBitCount{32};    // 32-bit
+  uint32_t biCompression{0};  // BI_RGB
   uint32_t biSizeImage{};
-  int32_t  biXPelsPerMeter{2835};
-  int32_t  biYPelsPerMeter{2835};
+  int32_t biXPelsPerMeter{2835};
+  int32_t biYPelsPerMeter{2835};
   uint32_t biClrUsed{};
   uint32_t biClrImportant{};
 };
 #pragma pack(pop)
 
 // 将 RGBA 保存为 32-bit BMP（BGRA 顺序，top-down，不需逐行倒置）
-static bool SaveBMP_BGRA_TopDown(const std::string& path, int w, int h,
-                                 const std::vector<uint8_t>& rgba) {
+static bool SaveBMP_BGRA_TopDown(const std::string& path, int w, int h, const std::vector<uint8_t>& rgba) {
   if (w <= 0 || h <= 0) return false;
   const size_t need = static_cast<size_t>(w) * h * 4;
   if (rgba.size() < need) return false;
@@ -66,22 +64,20 @@ static bool SaveBMP_BGRA_TopDown(const std::string& path, int w, int h,
   if (!f) return false;
   f.write(reinterpret_cast<const char*>(&fh), sizeof(fh));
   f.write(reinterpret_cast<const char*>(&ih), sizeof(ih));
-  f.write(reinterpret_cast<const char*>(bgra.data()),
-          static_cast<std::streamsize>(bgra.size()));
+  f.write(reinterpret_cast<const char*>(bgra.data()), static_cast<std::streamsize>(bgra.size()));
   return f.good();
 }
 
 static void PrintUsage(const char* argv0) {
   std::printf(
-    "Usage:\n"
-    "  %s [display_index] [output_prefix]\n\n"
-    "Args:\n"
-    "  display_index  : Optional, default 0. Index in [0, GetDisplayCount()).\n"
-    "  output_prefix  : Optional, default 'capture'. Files like capture_0.bmp.\n\n"
-    "Notes:\n"
-    "  Writes 32-bit BMP (top-down). If BMP fails, writes RGBA raw as fallback.\n",
-    argv0
-  );
+      "Usage:\n"
+      "  %s [display_index] [output_prefix]\n\n"
+      "Args:\n"
+      "  display_index  : Optional, default 0. Index in [0, GetDisplayCount()).\n"
+      "  output_prefix  : Optional, default 'capture'. Files like capture_0.bmp.\n\n"
+      "Notes:\n"
+      "  Writes 32-bit BMP (top-down). If BMP fails, writes RGBA raw as fallback.\n",
+      argv0);
 }
 
 int main(int argc, char** argv) {
@@ -122,8 +118,7 @@ int main(int argc, char** argv) {
     return 2;
   }
 
-  std::printf("Captured %dx%d, %zu bytes RGBA\n",
-              img.width, img.height, img.pixels.size());
+  std::printf("Captured %dx%d, %zu bytes RGBA\n", img.width, img.height, img.pixels.size());
 
   // 生成输出文件名
   std::ostringstream oss_bmp, oss_raw;

@@ -10,11 +10,11 @@
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
+#include <functional>
 #include <string>
 #include <string_view>
 #include <system_error>
 #include <thread>
-#include <functional>
 #include <vector>
 
 #if defined(_WIN32)
@@ -43,7 +43,6 @@
 #endif
 
 namespace autoalg {
-
 // =====================
 // Thread & Time
 // =====================
@@ -81,15 +80,17 @@ inline constexpr char PathSep() { return '\\'; }
 inline constexpr char PathSep() { return '/'; }
 #endif
 
-inline bool FileExists(const std::filesystem::path& p) {
+inline bool FileExists(const std::filesystem::path &p) {
   std::error_code ec;
   return std::filesystem::exists(p, ec);
 }
-inline bool CreateDirs(const std::filesystem::path& p) {
+
+inline bool CreateDirs(const std::filesystem::path &p) {
   std::error_code ec;
   return std::filesystem::create_directories(p, ec) || std::filesystem::exists(p, ec);
 }
-inline bool RemoveFile(const std::filesystem::path& p) {
+
+inline bool RemoveFile(const std::filesystem::path &p) {
   std::error_code ec;
   return std::filesystem::remove(p, ec);
 }
@@ -143,10 +144,10 @@ inline std::filesystem::path HomeDir() {
     CoTaskMemFree(wpath);
     return p;
   }
-  if (const char* up = std::getenv("USERPROFILE")) return std::filesystem::path(up);
+  if (const char *up = std::getenv("USERPROFILE")) return std::filesystem::path(up);
   return {};
 #else
-  if (const char* h = std::getenv("HOME")) return std::filesystem::path(h);
+  if (const char *h = std::getenv("HOME")) return std::filesystem::path(h);
   return {};
 #endif
 }
@@ -171,6 +172,7 @@ inline std::wstring Utf8ToW(std::string_view s) {
   MultiByteToWideChar(CP_UTF8, 0, s.data(), static_cast<int>(s.size()), w.data(), wlen);
   return w;
 }
+
 inline std::string WToUtf8(std::wstring_view w) {
   if (w.empty()) return std::string();
   int len = WideCharToMultiByte(CP_UTF8, 0, w.data(), static_cast<int>(w.size()), nullptr, 0, nullptr, nullptr);
@@ -191,7 +193,7 @@ inline std::string GetEnv(std::string_view key) {
   if (!wval.empty() && wval.back() == L'\0') wval.pop_back();
   return detail::WToUtf8(wval);
 #else
-  if (const char* v = std::getenv(std::string(key).c_str())) return std::string(v);
+  if (const char *v = std::getenv(std::string(key).c_str())) return std::string(v);
   return {};
 #endif
 }
@@ -234,16 +236,17 @@ inline size_t PageSize() {
 #endif
 }
 
-inline void* AlignedAlloc(size_t alignment, size_t size) {
+inline void *AlignedAlloc(size_t alignment, size_t size) {
 #if defined(_WIN32)
   return _aligned_malloc(size, alignment);
 #else
-  void* p = nullptr;
+  void *p = nullptr;
   if (posix_memalign(&p, alignment, size) != 0) return nullptr;
   return p;
 #endif
 }
-inline void AlignedFree(void* p) {
+
+inline void AlignedFree(void *p) {
 #if defined(_WIN32)
   _aligned_free(p);
 #else
@@ -259,16 +262,16 @@ struct DynLib {
 #if defined(_WIN32)
   HMODULE handle = nullptr;
 
-  bool open_utf8(const std::string& utf8_path) {
+  bool open_utf8(const std::string &utf8_path) {
     std::wstring w = detail::Utf8ToW(utf8_path);
     handle = ::LoadLibraryW(w.c_str());
     return handle != nullptr;
   }
-  bool open_w(const std::wstring& wpath) {
+  bool open_w(const std::wstring &wpath) {
     handle = ::LoadLibraryW(wpath.c_str());
     return handle != nullptr;
   }
-  void* symbol(const char* name) { return handle ? reinterpret_cast<void*>(::GetProcAddress(handle, name)) : nullptr; }
+  void *symbol(const char *name) { return handle ? reinterpret_cast<void *>(::GetProcAddress(handle, name)) : nullptr; }
   void close() {
     if (handle) {
       ::FreeLibrary(handle);
@@ -276,13 +279,15 @@ struct DynLib {
     }
   }
 #else
-  void* handle = nullptr;
+  void *handle = nullptr;
 
-  bool open(const std::string& path) {
+  bool open(const std::string &path) {
     handle = ::dlopen(path.c_str(), RTLD_NOW | RTLD_LOCAL);
     return handle != nullptr;
   }
-  void* symbol(const char* name) const { return handle ? ::dlsym(handle, name) : nullptr; }
+
+  void *symbol(const char *name) const { return handle ? ::dlsym(handle, name) : nullptr; }
+
   void close() {
     if (handle) {
       ::dlclose(handle);
@@ -340,7 +345,6 @@ inline std::filesystem::path CurrentDir() {
   auto p = std::filesystem::current_path(ec);
   return ec ? std::filesystem::path{} : p;
 }
-
 }  // namespace autoalg
 
 #endif  // AUTOALG_PLATFORM_COMMON_HPP

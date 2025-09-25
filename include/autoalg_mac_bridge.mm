@@ -1,4 +1,7 @@
-// (c) 2025 AutoAlg
+// (c) 2025 AutoAlg (autoalg.com).
+// Author: Chunzhi Qu.
+// SPDX-License-Identifier: MIT.
+
 #import <Foundation/Foundation.h>
 #import <CoreGraphics/CoreGraphics.h>
 #import <ApplicationServices/ApplicationServices.h>
