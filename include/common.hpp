@@ -14,6 +14,7 @@
 #include <string_view>
 #include <system_error>
 #include <thread>
+#include <functional>
 #include <vector>
 
 #if defined(_WIN32)
@@ -48,19 +49,23 @@ namespace autoalg {
 // =====================
 
 inline void SleepSeconds(const unsigned int s) { std::this_thread::sleep_for(std::chrono::seconds(s)); }
+
 inline void SleepMillis(const unsigned int ms) { std::this_thread::sleep_for(std::chrono::milliseconds(ms)); }
-inline void Yield() { std::this_thread::yield(); }
+
+inline void ThreadYield() { std::this_thread::yield(); }
 
 inline uint64_t NowUnixMillis() {
   using namespace std::chrono;
   return duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 }
+
 inline uint64_t NowSteadyMillis() {
   using namespace std::chrono;
   return duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
 }
 
 inline uint64_t ThisThreadId() { return std::hash<std::thread::id>{}(std::this_thread::get_id()); }
+
 inline unsigned NumHWThreads() {
   const unsigned n = std::thread::hardware_concurrency();
   return n ? n : 1u;
