@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-#include "screen_capture.hpp"
+#include "system_output.hpp"
 
 static bool SaveRAW_RGBA(const std::string& path, const std::vector<uint8_t>& rgba) {
   std::ofstream f(path, std::ios::binary);

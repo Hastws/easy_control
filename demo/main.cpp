@@ -6,7 +6,7 @@
 #include <iostream>
 #include <thread>
 
-#include "inputs.hpp"
+#include "system_input.hpp"
 
 using namespace autoalg;
 

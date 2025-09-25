@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-#include "autoalg/screen_capture.hpp"
+#include "system_output.hpp"
 
 // Detect if WAYLAND is active
 static inline bool is_wayland() {
