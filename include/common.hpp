@@ -231,7 +231,7 @@ inline size_t PageSize() {
   GetSystemInfo(&si);
   return static_cast<size_t>(si.dwPageSize);
 #else
-  long ps = ::sysconf(_SC_PAGESIZE);
+  const long ps = ::sysconf(_SC_PAGESIZE);
   return ps > 0 ? static_cast<size_t>(ps) : 4096u;
 #endif
 }
@@ -316,10 +316,10 @@ inline std::string LastErrorString() {
   if (msg) LocalFree(msg);
   return out;
 #else
-  int e = errno;
+  const int e = errno;
   char buf[256];
 #if ((_POSIX_C_SOURCE >= 200112L) && !defined(_GNU_SOURCE)) || defined(__APPLE__)
-  if (strerror_r(e, buf, sizeof(buf)) == 0) return std::string(buf);
+  if (strerror_r(e, buf, sizeof(buf)) == 0) return {buf};
   return {};
 #else
   return std::string(strerror_r(e, buf, sizeof(buf)));
