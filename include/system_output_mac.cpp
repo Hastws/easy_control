@@ -8,19 +8,13 @@
 
 #include "system_output.hpp"
 
-extern "C" {
-int MacCaptureScreenWithCursor(int displayIndex, MacImage *outImage);
-
-void MacFreeImage(MacImage *img);
-}
-
 namespace autoalg {
-bool SystemOutput::CaptureScreenWithCursor(int displayIndex, ImageRGBA &outImage) {
+bool SystemOutput::CaptureScreenWithCursor(int display_index, ImageRGBA &out_image) {
   MacImage m{};
-  if (!MacCaptureScreenWithCursor(displayIndex, &m)) return false;
-  outImage.width = m.width;
-  outImage.height = m.height;
-  outImage.pixels.assign(m.pixels, m.pixels + (size_t)m.width * m.height * 4);
+  if (!MacCaptureScreenWithCursor(display_index, &m)) return false;
+  out_image.width = m.width;
+  out_image.height = m.height;
+  out_image.pixels.assign(m.pixels, m.pixels + static_cast<size_t>(m.width) * m.height * 4);
   MacFreeImage(&m);
   return true;
 }
@@ -30,6 +24,6 @@ int SystemOutput::GetDisplayCount() {
   return 1;
 }
 
-std::string SystemOutput::GetDisplayInfo(int index) { return "macOS Display " + std::to_string(index); }
+std::string SystemOutput::GetDisplayInfo(const int display_index) { return "macOS Display " + std::to_string(display_index); }
 }  // namespace autoalg
 #endif

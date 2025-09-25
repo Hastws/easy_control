@@ -107,5 +107,5 @@ int MacCaptureScreenWithCursor(int displayIndex, MacImage* outImage) {
 }
 
 void MacFreeImage(MacImage* img) {
-  if (img && img->pixels) { std::free(img->pixels); img->pixels = NULL; }
+  if (img && img->pixels) { std::free(img->pixels); img->pixels = nullptr; }
 }
