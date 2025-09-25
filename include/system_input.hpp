@@ -18,8 +18,8 @@
 //
 // Usage: #include "input.hpp"
 
-#ifndef AUTOALG_INPUT_SIM_ALL_H_
-#define AUTOALG_INPUT_SIM_ALL_H_
+#ifndef EASY_CONTROL_INCLUDE_SYSTEM_INPUT_HPP
+#define EASY_CONTROL_INCLUDE_SYSTEM_INPUT_HPP
 
 #include <algorithm>
 #include <chrono>
@@ -1300,4 +1300,4 @@ class SystemInput {
 };
 }  // namespace autoalg
 
-#endif  // AUTOALG_INPUT_SIM_ALL_H_
+#endif  // EASY_CONTROL_INCLUDE_SYSTEM_INPUT_HPP
