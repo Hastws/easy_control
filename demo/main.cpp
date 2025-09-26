@@ -43,5 +43,14 @@ int main() {
 
   // 输出当前屏幕尺寸和坐标（内部状态）
   printf("Display: %zu x %zu, Cursor: (%d, %d)\n", in.GetDisplayWidth(), in.GetDisplayHeight(), in.CursorX(), in.CursorY());
+
+  int x;
+  int y;
+  in.GetCursorPixel(x,y);
+  std::cout << x << ", " << y << "\n";
+  in.GetPrimaryDisplayPixelSize(x,y);
+
+  std::cout << x << ", " << y << "\n";
+
   return 0;
 }
