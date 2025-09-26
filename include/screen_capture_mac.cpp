@@ -6,7 +6,7 @@
 
 #include <string>
 
-#include "screen_capture.hpp"
+#include "system_output.hpp"
 
 extern "C" {
 int MacCaptureScreenWithCursor(int displayIndex, MacImage *outImage);

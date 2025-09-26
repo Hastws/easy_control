@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-#include "screen_capture.hpp"
+#include "system_output.hpp"
 
 namespace {
 struct Monitor {
