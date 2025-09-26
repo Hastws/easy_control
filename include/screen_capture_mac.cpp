@@ -1,16 +1,21 @@
+// (c) 2025 AutoAlg (autoalg.com).
+// Author: Chunzhi Qu.
+// SPDX-License-Identifier: MIT.
+
 #ifdef __APPLE__
+
+#include <string>
 
 #include "screen_capture.hpp"
 
-#include <string>
 extern "C" {
-  int AutoAlg_MacCaptureScreenWithCursor(int displayIndex, AutoAlg_MacImage* outImage);
-  void AutoAlg_MacFreeImage(AutoAlg_MacImage* img);
+int AutoAlg_MacCaptureScreenWithCursor(int displayIndex, AutoAlg_MacImage *outImage);
+
+void AutoAlg_MacFreeImage(AutoAlg_MacImage *img);
 }
 
 namespace autoalg {
-
-bool ScreenCapture::CaptureScreenWithCursor(int displayIndex, ImageRGBA& outImage) {
+bool ScreenCapture::CaptureScreenWithCursor(int displayIndex, ImageRGBA &outImage) {
   AutoAlg_MacImage m{};
   if (!AutoAlg_MacCaptureScreenWithCursor(displayIndex, &m)) return false;
   outImage.width = m.width;
@@ -25,9 +30,6 @@ int ScreenCapture::GetDisplayCount() {
   return 1;
 }
 
-std::string ScreenCapture::GetDisplayInfo(int index) {
-  return "macOS Display " + std::to_string(index);
-}
-
-} // namespace autoalg
+std::string ScreenCapture::GetDisplayInfo(int index) { return "macOS Display " + std::to_string(index); }
+}  // namespace autoalg
 #endif

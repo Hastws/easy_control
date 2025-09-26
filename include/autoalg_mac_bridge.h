@@ -1,4 +1,7 @@
-// (c) 2025 AutoAlg
+// (c) 2025 AutoAlg (autoalg.com).
+// Author: Chunzhi Qu.
+// SPDX-License-Identifier: MIT.
+
 #pragma once
 #include <stdint.h>
 
@@ -9,11 +12,12 @@ extern "C" {
 typedef struct {
   int width;
   int height;
-  uint8_t* pixels; // RGBA, malloc'ed
+  uint8_t *pixels;  // RGBA, malloc'ed
 } AutoAlg_MacImage;
 
-int AutoAlg_MacCaptureScreenWithCursor(int displayIndex, AutoAlg_MacImage* outImage);
-void AutoAlg_MacFreeImage(AutoAlg_MacImage* img);
+int AutoAlg_MacCaptureScreenWithCursor(int displayIndex, AutoAlg_MacImage *outImage);
+
+void AutoAlg_MacFreeImage(AutoAlg_MacImage *img);
 
 #ifdef __cplusplus
 }
