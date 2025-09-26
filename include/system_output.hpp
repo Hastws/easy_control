@@ -21,13 +21,13 @@ class SystemOutput {
  public:
   // Capture the entire display with cursor blended.
   // displayIndex in [0, GetDisplayCount()).
-  static bool CaptureScreenWithCursor(int displayIndex, ImageRGBA& outImage);
+  static bool CaptureScreenWithCursor(int display_index, ImageRGBA& out_image);
 
   // Number of displays.
   static int GetDisplayCount();
 
   // Human-readable display info.
-  static std::string GetDisplayInfo(int displayIndex);
+  static std::string GetDisplayInfo(int display_index);
 };
 
 }  // namespace autoalg
@@ -40,7 +40,9 @@ struct MacImage {
   int height;
   uint8_t* pixels;  // RGBA, malloc'ed
 };
-int MacCaptureScreenWithCursor(int displayIndex, MacImage* outImage);
+
+int MacCaptureScreenWithCursor(int display_index, MacImage* out_image);
+
 void MacFreeImage(MacImage* img);
 }
 #endif

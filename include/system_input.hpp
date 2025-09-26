@@ -85,7 +85,7 @@ class SystemInput {
   // Construction / destruction.
   EC_INLINE SystemInput() {
 #ifdef __APPLE__
-    CGDirectDisplayID did = CGMainDisplayID();
+    const CGDirectDisplayID did = CGMainDisplayID();
     display_x_ = CGDisplayPixelsWide(did);
     display_y_ = CGDisplayPixelsHigh(did);
     // Initialize from current system cursor.
