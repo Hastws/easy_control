@@ -163,15 +163,15 @@ target_include_directories(autoalg_capture PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/in
 # Windows 源
 if (WIN32)
     target_sources(autoalg_capture PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}/include/screen_capture_win.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/include/system_output_windows.cpp
     )
 endif ()
 
 # Linux 源
 if (UNIX AND NOT APPLE)
     target_sources(autoalg_capture PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}/include/screen_capture_linux_x11.cpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/include/screen_capture_linux_wayland_portal.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/include/system_output_linux_x11.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/include/system_output_linux_wayland_portal.cpp
     )
 
     if (AUTOALG_USE_WAYLAND_PORTAL)
@@ -204,7 +204,7 @@ endif ()
 # macOS 源 + 依赖桥接库
 if (APPLE)
     target_sources(autoalg_capture PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}/include/screen_capture_mac.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/include/system_output_mac.cpp
     )
     target_link_libraries(autoalg_capture PUBLIC mac_bridge)
 endif ()
