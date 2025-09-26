@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+#include "macro.h"
+
 namespace autoalg {
 
 struct ImageRGBA {
