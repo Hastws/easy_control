@@ -3,7 +3,11 @@
 # SPDX-License-Identifier: MIT.
 
 cmake_minimum_required(VERSION 3.10)
-project(autoalg_all LANGUAGES C CXX OBJCXX)  # 显式启用 OBJCXX，.mm 以 Obj-C++ 编译
+project(autoalg_all LANGUAGES C CXX)
+
+if(APPLE)
+  enable_language(OBJCXX)
+endif()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

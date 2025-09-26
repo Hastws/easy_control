@@ -1,5 +1,5 @@
 #ifdef _WIN32
-#include "autoalg/screen_capture.hpp"
+#include "screen_capture.hpp"
 #include <windows.h>
 #include <string>
 #include <vector>
