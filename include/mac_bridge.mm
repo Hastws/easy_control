@@ -2,23 +2,22 @@
 // Author: Chunzhi Qu.
 // SPDX-License-Identifier: MIT.
 
+#import "mac_bridge.h"
+
 #import <Foundation/Foundation.h>
 #import <CoreGraphics/CoreGraphics.h>
 #import <ApplicationServices/ApplicationServices.h>
-#import <ScreenCaptureKit/ScreenCaptureKit.h>   // ScreenCaptureKit
-#import "autoalg_mac_bridge.h"
+#import <ScreenCaptureKit/ScreenCaptureKit.h>
 
 #include <vector>
 #include <cstdlib>
 #include <cmath>
 
-// 使用老而稳的获取分享内容 API（CLT SDK 可用）
 static SCDisplay* sc_display_for_index(NSInteger index) {
   __block SCShareableContent* content = nil;
   __block NSError* err = nil;
   dispatch_semaphore_t sem = dispatch_semaphore_create(0);
 
-  // 统一走旧 API：+getShareableContentWithCompletionHandler:
   [SCShareableContent getShareableContentWithCompletionHandler:^(SCShareableContent * _Nullable c,
                                                                  NSError * _Nullable e) {
     content = c; err = e; dispatch_semaphore_signal(sem);
@@ -33,8 +32,7 @@ static SCDisplay* sc_display_for_index(NSInteger index) {
   return content.displays[(NSUInteger)index];
 }
 
-// 将 CGImage 画进 RGBA(8, premultiplied last) 缓冲
-static int cgimage_to_rgba(CGImageRef src, AutoAlg_MacImage* outImage) {
+static int cgimage_to_rgba(CGImageRef src, MacImage* outImage) {
   if (!src || !outImage) return 0;
   const size_t w = CGImageGetWidth(src);
   const size_t h = CGImageGetHeight(src);
@@ -58,13 +56,12 @@ static int cgimage_to_rgba(CGImageRef src, AutoAlg_MacImage* outImage) {
   return 1;
 }
 
-int AutoAlg_MacCaptureScreenWithCursor(int displayIndex, AutoAlg_MacImage* outImage) {
+int MacCaptureScreenWithCursor(int displayIndex, MacImage* outImage) {
   if (!outImage) return 0;
 
   SCDisplay* disp = sc_display_for_index(displayIndex);
   if (!disp) return 0;
 
-  // 整屏过滤器
   SCContentFilter* filter = nil;
   if ([SCContentFilter instancesRespondToSelector:@selector(initWithDisplay:excludingWindows:)]) {
     filter = [[SCContentFilter alloc] initWithDisplay:disp excludingWindows:@[]];
@@ -74,19 +71,17 @@ int AutoAlg_MacCaptureScreenWithCursor(int displayIndex, AutoAlg_MacImage* outIm
     return 0;
   }
 
-  // 输出配置：分辨率 = contentRect * pointPixelScale
   CGRect contentRect = filter.contentRect;
   const CGFloat scale = filter.pointPixelScale;
 
   SCStreamConfiguration* cfg = [SCStreamConfiguration new];
-  cfg.showsCursor = YES;  // 把鼠标光标画进去（ScreenCaptureKit 支持） :contentReference[oaicite:1]{index=1}
+  cfg.showsCursor = YES;
   if ([cfg respondsToSelector:@selector(setCaptureResolution:)]) {
     cfg.captureResolution = SCCaptureResolutionBest;
   }
   cfg.width  = (int)llround(CGRectGetWidth(contentRect)  * scale);
   cfg.height = (int)llround(CGRectGetHeight(contentRect) * scale);
 
-  // 使用 SCScreenshotManager 抓单帧
   __block CGImageRef grabbed = nil;
   __block NSError* err = nil;
   dispatch_semaphore_t sem = dispatch_semaphore_create(0);
@@ -111,6 +106,6 @@ int AutoAlg_MacCaptureScreenWithCursor(int displayIndex, AutoAlg_MacImage* outIm
   return ok;
 }
 
-void AutoAlg_MacFreeImage(AutoAlg_MacImage* img) {
+void MacFreeImage(MacImage* img) {
   if (img && img->pixels) { std::free(img->pixels); img->pixels = NULL; }
 }

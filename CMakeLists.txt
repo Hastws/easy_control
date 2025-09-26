@@ -5,9 +5,9 @@
 cmake_minimum_required(VERSION 3.10)
 project(autoalg_all LANGUAGES C CXX)
 
-if(APPLE)
-  enable_language(OBJCXX)
-endif()
+if (APPLE)
+    enable_language(OBJCXX)
+endif ()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -15,11 +15,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # =========================
 # Options
 # =========================
-option(INPUT_BUILD_DEMO           "Build a tiny input_sim demo" ON)
-option(INPUT_BACKEND_WAYLAND_WLR  "Use Wayland (wlroots virtual pointer/keyboard) backend on Linux" OFF)
-option(INPUT_BACKEND_UINPUT       "Use uinput backend on Linux" OFF)
-option(INPUT_STRICT_WARNINGS      "Enable strict warnings for input_sim" ON)
-
+option(INPUT_BUILD_DEMO "Build a tiny input_sim demo" ON)
+option(INPUT_BACKEND_WAYLAND_WLR "Use Wayland (wlroots virtual pointer/keyboard) backend on Linux" OFF)
+option(INPUT_BACKEND_UINPUT "Use uinput backend on Linux" OFF)
+option(INPUT_STRICT_WARNINGS "Enable strict warnings for input_sim" ON)
 option(AUTOALG_USE_WAYLAND_PORTAL "Use xdg-desktop-portal on Linux/Wayland for screen capture" OFF)
 
 # =========================
@@ -34,23 +33,23 @@ target_compile_features(input_sim INTERFACE cxx_std_17)
 
 if (MSVC)
     target_compile_definitions(input_sim INTERFACE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
-endif()
+endif ()
 
 if (INPUT_STRICT_WARNINGS)
     if (MSVC)
         target_compile_options(input_sim INTERFACE /W4)
-    else()
+    else ()
         target_compile_options(input_sim INTERFACE -Wall -Wextra -Wpedantic)
-    endif()
-endif()
+    endif ()
+endif ()
 
 if (APPLE)
     # macOS: 常见输入模拟/系统服务来自 ApplicationServices（覆盖 CoreGraphics 等）
     find_library(APP_SERVICES_FRAMEWORK ApplicationServices)
-    find_library(FOUNDATION_FRAMEWORK   Foundation)
+    find_library(FOUNDATION_FRAMEWORK Foundation)
     if (NOT APP_SERVICES_FRAMEWORK OR NOT FOUNDATION_FRAMEWORK)
         message(FATAL_ERROR "macOS frameworks not found: ApplicationServices / Foundation")
-    endif()
+    endif ()
     target_link_libraries(input_sim INTERFACE
             "${APP_SERVICES_FRAMEWORK}"
             "${FOUNDATION_FRAMEWORK}"
@@ -70,30 +69,30 @@ elseif (UNIX AND NOT APPLE)
         check_include_file("linux/uinput.h" HAVE_UINPUT_H)
         if (NOT HAVE_UINPUT_H)
             message(FATAL_ERROR "linux/uinput.h not found. Install kernel headers or uinput dev package.")
-        endif()
+        endif ()
         target_compile_definitions(input_sim INTERFACE INPUT_BACKEND_UINPUT=1)
-    else()
+    else ()
         if (PKG_CONFIG_FOUND)
             pkg_check_modules(X11 REQUIRED x11)
             pkg_check_modules(XTST REQUIRED xtst)
             target_include_directories(input_sim INTERFACE ${X11_INCLUDE_DIRS} ${XTST_INCLUDE_DIRS})
             target_link_libraries(input_sim INTERFACE ${X11_LIBRARIES} ${XTST_LIBRARIES})
-        else()
+        else ()
             find_package(X11 REQUIRED)
             if (NOT X11_XTest_LIB)
                 find_library(XTST_LIB Xtst)
                 if (NOT XTST_LIB)
                     message(FATAL_ERROR "X11 found but Xtst not found. Install libxtst-dev.")
-                endif()
+                endif ()
                 target_link_libraries(input_sim INTERFACE ${X11_LIBRARIES} ${XTST_LIB})
-            else()
+            else ()
                 target_link_libraries(input_sim INTERFACE ${X11_LIBRARIES} ${X11_XTest_LIB})
-            endif()
+            endif ()
             target_include_directories(input_sim INTERFACE ${X11_INCLUDE_DIR})
-        endif()
+        endif ()
         target_compile_definitions(input_sim INTERFACE INPUT_BACKEND_X11=1)
-    endif()
-endif()
+    endif ()
+endif ()
 
 if (INPUT_BUILD_DEMO)
     add_executable(input_demo demo/main.cpp)  # 请提供 demo/main.cpp
@@ -103,8 +102,8 @@ if (INPUT_BUILD_DEMO)
                 ${APP_SERVICES_FRAMEWORK}
                 ${FOUNDATION_FRAMEWORK}
         )
-    endif()
-endif()
+    endif ()
+endif ()
 
 include(GNUInstallDirs)
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
@@ -133,40 +132,29 @@ install(FILES
 
 # 1) mac 桥接库：只在 APPLE 下存在（.mm 用 ARC）
 if (APPLE)
-    add_library(autoalg_mac STATIC
-            ${CMAKE_CURRENT_SOURCE_DIR}/include/autoalg_mac_bridge.mm
+    add_library(mac_bridge STATIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/include/mac_bridge.mm
     )
     set_source_files_properties(
-            ${CMAKE_CURRENT_SOURCE_DIR}/include/autoalg_mac_bridge.mm
+            ${CMAKE_CURRENT_SOURCE_DIR}/include/mac_bridge.mm
             PROPERTIES COMPILE_FLAGS "-fobjc-arc"
     )
-    target_include_directories(autoalg_mac PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    target_include_directories(mac_bridge PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
     # 找到框架
     find_library(SCREENCAPTUREKIT_FRAMEWORK ScreenCaptureKit REQUIRED)
-    find_library(COREGRAPHICS_FRAMEWORK     CoreGraphics      REQUIRED)
-    find_library(APP_SERVICES_FRAMEWORK     ApplicationServices REQUIRED)
-    find_library(FOUNDATION_FRAMEWORK       Foundation        REQUIRED)
+    find_library(COREGRAPHICS_FRAMEWORK CoreGraphics REQUIRED)
+    find_library(APP_SERVICES_FRAMEWORK ApplicationServices REQUIRED)
+    find_library(FOUNDATION_FRAMEWORK Foundation REQUIRED)
 
     # 关键：ScreenCaptureKit 用 PUBLIC，让依赖它的目标自动继承链接项
-    target_link_libraries(autoalg_mac PUBLIC
+    target_link_libraries(mac_bridge PUBLIC
             ${SCREENCAPTUREKIT_FRAMEWORK}
             ${COREGRAPHICS_FRAMEWORK}
             ${APP_SERVICES_FRAMEWORK}
             ${FOUNDATION_FRAMEWORK}
     )
-
-
-    # 显式链接 CoreGraphics（包含 CGDisplayCopyCursorImage 等）
-#    find_library(COREGRAPHICS_FRAMEWORK CoreGraphics REQUIRED)
-#    target_link_libraries(autoalg_mac PRIVATE
-#            ${COREGRAPHICS_FRAMEWORK}
-#            ${APP_SERVICES_FRAMEWORK}
-#            ${FOUNDATION_FRAMEWORK}
-            # AppKit 仅当桥接里用到 NSImage/NSBitmap 才需要：
-            # "-framework AppKit"
-#    )
-endif()
+endif ()
 
 # 2) 主捕获库：按平台选择性添加源文件
 add_library(autoalg_capture STATIC)
@@ -177,7 +165,7 @@ if (WIN32)
     target_sources(autoalg_capture PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/include/screen_capture_win.cpp
     )
-endif()
+endif ()
 
 # Linux 源
 if (UNIX AND NOT APPLE)
@@ -205,24 +193,24 @@ if (UNIX AND NOT APPLE)
         )
         FetchContent_MakeAvailable(stb)
         target_include_directories(autoalg_capture PRIVATE ${stb_SOURCE_DIR})
-    else()
+    else ()
         find_package(PkgConfig REQUIRED)
         pkg_check_modules(X11 REQUIRED x11 xfixes xrandr)
         target_include_directories(autoalg_capture PRIVATE ${X11_INCLUDE_DIRS})
         target_link_libraries(autoalg_capture PRIVATE ${X11_LIBRARIES})
-    endif()
-endif()
+    endif ()
+endif ()
 
 # macOS 源 + 依赖桥接库
 if (APPLE)
     target_sources(autoalg_capture PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/include/screen_capture_mac.cpp
     )
-    target_link_libraries(autoalg_capture PUBLIC autoalg_mac)
-endif()
+    target_link_libraries(autoalg_capture PUBLIC mac_bridge)
+endif ()
 
 # demo
-add_executable(capture_demo demo/demo.cpp)         # 请提供 demo/demo.cpp
+add_executable(capture_demo demo/demo.cpp)
 target_link_libraries(capture_demo PRIVATE autoalg_capture)
 
 # =========================
@@ -236,10 +224,10 @@ if (UNIX AND NOT APPLE)
         message(STATUS "   Backend : Wayland (wlroots)")
     elseif (INPUT_BACKEND_UINPUT)
         message(STATUS "   Backend : uinput")
-    else()
+    else ()
         message(STATUS "   Backend : X11 + XTest")
-    endif()
-endif()
+    endif ()
+endif ()
 message(STATUS "   Demo    : ${INPUT_BUILD_DEMO}")
 message(STATUS "-------------------------------------------")
 message(STATUS " screen_capture configured:")
@@ -248,10 +236,10 @@ if (APPLE)
 elseif (UNIX AND NOT APPLE)
     if (AUTOALG_USE_WAYLAND_PORTAL)
         message(STATUS "   Linux: Wayland portal (gio/glib + stb_image)")
-    else()
+    else ()
         message(STATUS "   Linux: X11 + XRandR + XFixes")
-    endif()
+    endif ()
 elseif (WIN32)
     message(STATUS "   Windows: win32 capture backend")
-endif()
+endif ()
 message(STATUS "===========================================")

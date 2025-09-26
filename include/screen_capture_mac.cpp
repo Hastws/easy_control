@@ -9,19 +9,19 @@
 #include "screen_capture.hpp"
 
 extern "C" {
-int AutoAlg_MacCaptureScreenWithCursor(int displayIndex, AutoAlg_MacImage *outImage);
+int MacCaptureScreenWithCursor(int displayIndex, MacImage *outImage);
 
-void AutoAlg_MacFreeImage(AutoAlg_MacImage *img);
+void MacFreeImage(MacImage *img);
 }
 
 namespace autoalg {
 bool ScreenCapture::CaptureScreenWithCursor(int displayIndex, ImageRGBA &outImage) {
-  AutoAlg_MacImage m{};
-  if (!AutoAlg_MacCaptureScreenWithCursor(displayIndex, &m)) return false;
+  MacImage m{};
+  if (!MacCaptureScreenWithCursor(displayIndex, &m)) return false;
   outImage.width = m.width;
   outImage.height = m.height;
   outImage.pixels.assign(m.pixels, m.pixels + (size_t)m.width * m.height * 4);
-  AutoAlg_MacFreeImage(&m);
+  MacFreeImage(&m);
   return true;
 }
 
