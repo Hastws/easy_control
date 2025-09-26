@@ -211,15 +211,18 @@ if (APPLE)
 endif ()
 
 add_executable(joint_test demo/joint_test.cpp)
-target_link_libraries(joint_test PRIVATE input_sim)
+target_link_libraries(joint_test PRIVATE input_sim autoalg_capture)
 if (APPLE)
+    find_library(FW_APP_SERVICES ApplicationServices)
+    find_library(FW_FOUNDATION    Foundation)
+    find_library(FW_CARBON        Carbon)
+
     target_link_libraries(joint_test PRIVATE
             ${APP_SERVICES_FRAMEWORK}
             ${FOUNDATION_FRAMEWORK}
             ${FW_APP_SERVICES}
             ${FW_FOUNDATION}
             ${FW_CARBON}
-            autoalg_capture
     )
 endif ()
 
