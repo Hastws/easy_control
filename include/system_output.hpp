@@ -2,9 +2,8 @@
 // Author: Chunzhi Qu.
 // SPDX-License-Identifier: MIT.
 
-#pragma once
-#ifndef AUTOALG_SCREEN_CAPTURE_HPP
-#define AUTOALG_SCREEN_CAPTURE_HPP
+#ifndef EASY_CONTROL_INCLUDE_SYSTEM_OUTPUT_HPP
+#define EASY_CONTROL_INCLUDE_SYSTEM_OUTPUT_HPP
 
 #include <cstdint>
 #include <string>
@@ -46,4 +45,4 @@ void MacFreeImage(MacImage* img);
 }
 #endif
 
-#endif  // AUTOALG_SCREEN_CAPTURE_HPP
+#endif  // EASY_CONTROL_INCLUDE_SYSTEM_OUTPUT_HPP
