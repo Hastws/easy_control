@@ -1,6 +1,6 @@
-// demo.cpp
-// (c) 2025 AutoAlg (autoalg.com)
-// SPDX-License-Identifier: MIT
+// (c) 2025 AutoAlg (autoalg.com).
+// Author: Chunzhi Qu.
+// SPDX-License-Identifier: MIT.
 
 #include <algorithm>
 #include <cstdint>

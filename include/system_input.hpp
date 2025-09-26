@@ -83,7 +83,7 @@ class SystemInput {
   };
 
   // Construction / destruction.
-  inline SystemInput() {
+  EC_INLINE SystemInput() {
 #ifdef __APPLE__
     CGDirectDisplayID did = CGMainDisplayID();
     display_x_ = CGDisplayPixelsWide(did);
@@ -179,7 +179,7 @@ class SystemInput {
 #endif
   }
 
-  inline ~SystemInput() {
+  EC_INLINE ~SystemInput() {
 #if defined(__linux__)
 #ifdef INPUT_BACKEND_WAYLAND_WLR
     if (vkb_dev_) {
@@ -217,12 +217,12 @@ class SystemInput {
   }
 
   // ---------- Info / sync ----------
-  inline std::size_t GetDisplayWidth() const { return display_x_; }
-  inline std::size_t GetDisplayHeight() const { return display_y_; }
-  inline int CursorX() const { return cur_x_; }
-  inline int CursorY() const { return cur_y_; }
+  EC_INLINE std::size_t GetDisplayWidth() const { return display_x_; }
+  EC_INLINE std::size_t GetDisplayHeight() const { return display_y_; }
+  EC_INLINE int CursorX() const { return cur_x_; }
+  EC_INLINE int CursorY() const { return cur_y_; }
 
-  inline void SyncCursorFromSystem() {
+  EC_INLINE void SyncCursorFromSystem() {
 #ifdef __APPLE__
     CGEventRef ev = CGEventCreate(nullptr);
     CGPoint p = CGEventGetLocation(ev);
@@ -256,7 +256,7 @@ class SystemInput {
   }
 
   // ---------- Mouse basic ----------
-  inline void MouseMoveTo(int x, int y) {
+  EC_INLINE void MouseMoveTo(int x, int y) {
     x = std::max(0, std::min<int>(x, static_cast<int>(display_x_)));
     y = std::max(0, std::min<int>(y, static_cast<int>(display_y_)));
 #ifdef __APPLE__
@@ -303,9 +303,9 @@ class SystemInput {
     cur_y_ = y;
   }
 
-  inline void MouseMoveRelative(int dx, int dy) { MouseMoveTo(cur_x_ + dx, cur_y_ + dy); }
+  EC_INLINE void MouseMoveRelative(int dx, int dy) { MouseMoveTo(cur_x_ + dx, cur_y_ + dy); }
 
-  inline void MouseDown(int button) {
+  EC_INLINE void MouseDown(int button) {
 #ifdef __APPLE__
     CGEventRef e = CGEventCreateMouseEvent(nullptr, DownEvent_(button), CGPointMake(cur_x_, cur_y_), ToMouseButton_(button));
     CGEventPost(kCGHIDEventTap, e);
@@ -334,7 +334,7 @@ class SystemInput {
 #endif
   }
 
-  inline void MouseUp(int button) {
+  EC_INLINE void MouseUp(int button) {
 #ifdef __APPLE__
     CGEventRef e = CGEventCreateMouseEvent(nullptr, UpEvent_(button), CGPointMake(cur_x_, cur_y_), ToMouseButton_(button));
     CGEventPost(kCGHIDEventTap, e);
@@ -363,40 +363,40 @@ class SystemInput {
 #endif
   }
 
-  inline void MouseClick(int button) {
+  EC_INLINE void MouseClick(int button) {
     MouseDown(button);
     MouseUp(button);
   }
 
-  inline void MouseDoubleClick(int button) {
+  EC_INLINE void MouseDoubleClick(int button) {
     MouseClick(button);
     MouseClick(button);
   }
 
-  inline void MouseTripleClick(int button) {
+  EC_INLINE void MouseTripleClick(int button) {
     MouseClick(button);
     MouseClick(button);
     MouseClick(button);
   }
 
-  inline void MouseDownAt(int x, int y, int button) {
+  EC_INLINE void MouseDownAt(int x, int y, int button) {
     MouseMoveTo(x, y);
     MouseDown(button);
   }
 
-  inline void MouseUpAt(int x, int y, int button) {
+  EC_INLINE void MouseUpAt(int x, int y, int button) {
     MouseMoveTo(x, y);
     MouseUp(button);
   }
 
-  inline void MouseClickAt(int x, int y, int button) {
+  EC_INLINE void MouseClickAt(int x, int y, int button) {
     MouseMoveTo(x, y);
     MouseClick(button);
   }
 
   // 用下面实现替换你原有的 MouseDragTo：
 
-  inline void MouseDragTo(int x, int y, int button) {
+  EC_INLINE void MouseDragTo(int x, int y, int button) {
     // 同步一下起点，避免内部坐标与系统真实位置有偏差
     SyncCursorFromSystem();
 
@@ -491,15 +491,15 @@ class SystemInput {
 #endif
   }
 
-  inline void MouseDragBy(int dx, int dy, int button) { MouseDragTo(cur_x_ + dx, cur_y_ + dy, button); }
+  EC_INLINE void MouseDragBy(int dx, int dy, int button) { MouseDragTo(cur_x_ + dx, cur_y_ + dy, button); }
 
-  inline void MouseHold(int button, double seconds) {
+  EC_INLINE void MouseHold(int button, double seconds) {
     MouseDown(button);
     if (seconds > 0) std::this_thread::sleep_for(std::chrono::duration<double>(seconds));
     MouseUp(button);
   }
 
-  inline void ScrollLines(int dx, int dy) {
+  EC_INLINE void ScrollLines(int dx, int dy) {
 #ifdef __APPLE__
     CGEventRef ev = CGEventCreateScrollWheelEvent(nullptr, kCGScrollEventUnitLine, 2, dy, dx);
     CGEventPost(kCGHIDEventTap, ev);
@@ -559,7 +559,7 @@ class SystemInput {
 #endif
   }
 
-  inline void ScrollPixels(int dx, int dy) {
+  EC_INLINE void ScrollPixels(int dx, int dy) {
 #ifdef __APPLE__
     CGEventRef ev = CGEventCreateScrollWheelEvent(nullptr, kCGScrollEventUnitPixel, 2, dy, dx);
     CGEventPost(kCGHIDEventTap, ev);
@@ -601,11 +601,11 @@ class SystemInput {
 #endif
   }
 
-  inline void MouseScrollX(int length) { ScrollLines(length, 0); }
-  inline void MouseScrollY(int length) { ScrollLines(0, length); }
+  EC_INLINE void MouseScrollX(int length) { ScrollLines(length, 0); }
+  EC_INLINE void MouseScrollY(int length) { ScrollLines(0, length); }
 
   // ---------- Keyboard ----------
-  inline void KeyboardDown(int key) {
+  EC_INLINE void KeyboardDown(int key) {
 #ifdef __APPLE__
     CGEventRef ev = CGEventCreateKeyboardEvent(nullptr, static_cast<CGKeyCode>(key), true);
     CGEventPost(kCGAnnotatedSessionEventTap, ev);
@@ -634,7 +634,7 @@ class SystemInput {
 #endif
   }
 
-  inline void KeyboardUp(int key) {
+  EC_INLINE void KeyboardUp(int key) {
 #ifdef __APPLE__
     CGEventRef ev = CGEventCreateKeyboardEvent(nullptr, static_cast<CGKeyCode>(key), false);
     CGEventPost(kCGAnnotatedSessionEventTap, ev);
@@ -663,12 +663,12 @@ class SystemInput {
 #endif
   }
 
-  inline void KeyboardClick(int key) {
+  EC_INLINE void KeyboardClick(int key) {
     KeyboardDown(key);
     KeyboardUp(key);
   }
 
-  inline void KeyboardDownWithMods(int key, uint64_t mods) {
+  EC_INLINE void KeyboardDownWithMods(int key, uint64_t mods) {
 #if defined(__APPLE__)
     CGEventRef ev = CGEventCreateKeyboardEvent(nullptr, static_cast<CGKeyCode>(key), true);
     CGEventSetFlags(ev, BuildFlagsMac_(mods));
@@ -730,7 +730,7 @@ class SystemInput {
 #endif
   }
 
-  inline void KeyboardUpWithMods(int key, uint64_t mods) {
+  EC_INLINE void KeyboardUpWithMods(int key, uint64_t mods) {
 #if defined(__APPLE__)
     CGEventRef ev = CGEventCreateKeyboardEvent(nullptr, static_cast<CGKeyCode>(key), false);
     CGEventSetFlags(ev, BuildFlagsMac_(mods));
@@ -777,7 +777,7 @@ class SystemInput {
 #endif
   }
 
-  inline void KeyboardClickWithMods(int key, uint64_t mods) {
+  EC_INLINE void KeyboardClickWithMods(int key, uint64_t mods) {
 #if defined(_WIN32)
     bool s = false, c = false, a = false, w = false;
     if (mods & kShift) {
@@ -807,20 +807,20 @@ class SystemInput {
 #endif
   }
 
-  inline void KeyChord(std::initializer_list<uint64_t> modifiers, int key) {
+  EC_INLINE void KeyChord(std::initializer_list<uint64_t> modifiers, int key) {
     uint64_t m = 0;
     for (auto v : modifiers) m |= v;
     KeyboardClickWithMods(key, m);
   }
 
-  inline void KeySequence(const std::string &sequence) {
+  EC_INLINE void KeySequence(const std::string &sequence) {
     for (char c : sequence) {
       int code = CharToKeyCode(c);
       if (code >= 0) KeyboardClick(code);
     }
   }
 
-  inline void TypeUTF8(const std::string &utf8_text) {
+  EC_INLINE void TypeUTF8(const std::string &utf8_text) {
 #ifdef __APPLE__
     if (utf8_text.empty()) return;
     CFStringRef cf = CFStringCreateWithBytes(kCFAllocatorDefault, reinterpret_cast<const UInt8 *>(utf8_text.data()),
@@ -927,7 +927,7 @@ class SystemInput {
 #endif
   }
 
-  inline int CharToKeyCode(char key_char) {
+  EC_INLINE int CharToKeyCode(char key_char) {
 #ifdef __APPLE__
     // Layout-aware mapping (limited to ASCII for simplicity).
     // For robust text, use TypeUTF8.
@@ -1009,7 +1009,7 @@ class SystemInput {
 
   // 在 class SystemInput 的 private: 区域里加上：
 
-  inline void EmitDragPath_(int start_x, int start_y, int end_x, int end_y, int button) {
+  EC_INLINE void EmitDragPath_(int start_x, int start_y, int end_x, int end_y, int button) {
     // 线性插值若干步，逐步发出“拖拽中的移动事件”
     const int dx = end_x - start_x;
     const int dy = end_y - start_y;
@@ -1095,7 +1095,7 @@ class SystemInput {
 
   // ---------- macOS helpers ----------
 #ifdef __APPLE__
-  inline CGEventFlags BuildFlagsMac_(uint64_t mods) {
+  EC_INLINE CGEventFlags BuildFlagsMac_(uint64_t mods) {
     CGEventFlags f = 0;
     if (mods & kShift) f |= kCGEventFlagMaskShift;
     if (mods & kControl) f |= kCGEventFlagMaskControl;
@@ -1104,25 +1104,25 @@ class SystemInput {
     return f;
   }
 
-  inline CGMouseButton ToMouseButton_(int b) {
+  EC_INLINE CGMouseButton ToMouseButton_(int b) {
     return b == kRight ? kCGMouseButtonRight : (b == kMiddle ? kCGMouseButtonCenter : kCGMouseButtonLeft);
   }
 
-  inline CGEventType DownEvent_(int b) {
+  EC_INLINE CGEventType DownEvent_(int b) {
     return b == kRight ? kCGEventRightMouseDown : b == kMiddle ? kCGEventOtherMouseDown : kCGEventLeftMouseDown;
   }
 
-  inline CGEventType UpEvent_(int b) {
+  EC_INLINE CGEventType UpEvent_(int b) {
     return b == kRight ? kCGEventRightMouseUp : b == kMiddle ? kCGEventOtherMouseUp : kCGEventLeftMouseUp;
   }
 #endif
 
   // ---------- Windows helpers ----------
 #ifdef _WIN32
-  inline WORD WinButtonDownFlag_(int b) {
+  EC_INLINE WORD WinButtonDownFlag_(int b) {
     return b == kRight ? MOUSEEVENTF_RIGHTDOWN : (b == kMiddle ? MOUSEEVENTF_MIDDLEDOWN : MOUSEEVENTF_LEFTDOWN);
   }
-  inline WORD WinButtonUpFlag_(int b) {
+  EC_INLINE WORD WinButtonUpFlag_(int b) {
     return b == kRight ? MOUSEEVENTF_RIGHTUP : (b == kMiddle ? MOUSEEVENTF_MIDDLEUP : MOUSEEVENTF_LEFTUP);
   }
 #endif
@@ -1133,8 +1133,8 @@ class SystemInput {
 #ifdef INPUT_BACKEND_X11
   Display *dpy_{nullptr};
   int screen_{0};
-  inline int XButtonFromGeneric_(int b) { return b == kRight ? 3 : (b == kMiddle ? 2 : 1); }
-  inline void PressModX11_(uint64_t mods, bool press) {
+  EC_INLINE int XButtonFromGeneric_(int b) { return b == kRight ? 3 : (b == kMiddle ? 2 : 1); }
+  EC_INLINE void PressModX11_(uint64_t mods, bool press) {
     auto act = [&](KeySym sym) {
       KeyCode kc = XKeysymToKeycode(dpy_, sym);
       if (kc) XTestFakeKeyEvent(dpy_, kc, press ? True : False, CurrentTime);
@@ -1149,7 +1149,7 @@ class SystemInput {
   // uinput
 #ifdef INPUT_BACKEND_UINPUT
   int uinp_fd_{-1};
-  inline void SendUinputSync_() {
+  EC_INLINE void SendUinputSync_() {
     if (uinp_fd_ < 0) return;
     input_event ev{};
     ev.type = EV_SYN;
@@ -1157,7 +1157,7 @@ class SystemInput {
     ev.value = 0;
     write(uinp_fd_, &ev, sizeof(ev));
   }
-  inline void SendUinputRel_(unsigned short code, int value) {
+  EC_INLINE void SendUinputRel_(unsigned short code, int value) {
     if (uinp_fd_ < 0) return;
     input_event ev{};
     ev.type = EV_REL;
@@ -1165,7 +1165,7 @@ class SystemInput {
     ev.value = value;
     write(uinp_fd_, &ev, sizeof(ev));
   }
-  inline void SendUinputKey_(int code, int press) {
+  EC_INLINE void SendUinputKey_(int code, int press) {
     if (uinp_fd_ < 0) return;
     input_event ev{};
     ev.type = EV_KEY;
@@ -1173,12 +1173,12 @@ class SystemInput {
     ev.value = press ? 1 : 0;
     write(uinp_fd_, &ev, sizeof(ev));
   }
-  inline int LinuxBtnCode_(int b) const { return b == kRight ? BTN_RIGHT : (b == kMiddle ? BTN_MIDDLE : BTN_LEFT); }
-  inline int LinuxKeyShift_() const { return KEY_LEFTSHIFT; }
-  inline int LinuxKeyCtrl_() const { return KEY_LEFTCTRL; }
-  inline int LinuxKeyAlt_() const { return KEY_LEFTALT; }
-  inline int LinuxKeySuper_() const { return KEY_LEFTMETA; }
-  inline int LinuxAsciiToKeyCode_(unsigned char c) const {
+  EC_INLINE int LinuxBtnCode_(int b) const { return b == kRight ? BTN_RIGHT : (b == kMiddle ? BTN_MIDDLE : BTN_LEFT); }
+  EC_INLINE int LinuxKeyShift_() const { return KEY_LEFTSHIFT; }
+  EC_INLINE int LinuxKeyCtrl_() const { return KEY_LEFTCTRL; }
+  EC_INLINE int LinuxKeyAlt_() const { return KEY_LEFTALT; }
+  EC_INLINE int LinuxKeySuper_() const { return KEY_LEFTMETA; }
+  EC_INLINE int LinuxAsciiToKeyCode_(unsigned char c) const {
     // Minimal ASCII mapping (extend as you need)
     if (c >= 'a' && c <= 'z') return KEY_A + (c - 'a');
     if (c >= 'A' && c <= 'Z') return KEY_A + (c - 'A');
@@ -1243,20 +1243,20 @@ class SystemInput {
   }
   static void RegistryGlobalRemove_(void *, wl_registry *, uint32_t) {}
 
-  inline const wl_registry_listener &RegistryListener() const {
+  EC_INLINE const wl_registry_listener &RegistryListener() const {
     static const wl_registry_listener kListener = {RegistryGlobal_, RegistryGlobalRemove_};
     return kListener;
   }
 
-  inline uint32_t LinuxBtnCode_(int b) const {
+  EC_INLINE uint32_t LinuxBtnCode_(int b) const {
     // Wayland uses Linux input button codes.
     return b == kRight ? BTN_RIGHT : (b == kMiddle ? BTN_MIDDLE : BTN_LEFT);
   }
-  inline int LinuxKeyShift_() const { return KEY_LEFTSHIFT; }
-  inline int LinuxKeyCtrl_() const { return KEY_LEFTCTRL; }
-  inline int LinuxKeyAlt_() const { return KEY_LEFTALT; }
-  inline int LinuxKeySuper_() const { return KEY_LEFTMETA; }
-  inline int LinuxAsciiToKeyCode_(unsigned char c) const {
+  EC_INLINE int LinuxKeyShift_() const { return KEY_LEFTSHIFT; }
+  EC_INLINE int LinuxKeyCtrl_() const { return KEY_LEFTCTRL; }
+  EC_INLINE int LinuxKeyAlt_() const { return KEY_LEFTALT; }
+  EC_INLINE int LinuxKeySuper_() const { return KEY_LEFTMETA; }
+  EC_INLINE int LinuxAsciiToKeyCode_(unsigned char c) const {
     // Same minimal mapping as uinput.
     if (c >= 'a' && c <= 'z') return KEY_A + (c - 'a');
     if (c >= 'A' && c <= 'Z') return KEY_A + (c - 'A');
