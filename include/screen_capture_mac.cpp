@@ -15,7 +15,7 @@ void MacFreeImage(MacImage *img);
 }
 
 namespace autoalg {
-bool ScreenCapture::CaptureScreenWithCursor(int displayIndex, ImageRGBA &outImage) {
+bool SystemOutput::CaptureScreenWithCursor(int displayIndex, ImageRGBA &outImage) {
   MacImage m{};
   if (!MacCaptureScreenWithCursor(displayIndex, &m)) return false;
   outImage.width = m.width;
@@ -25,11 +25,11 @@ bool ScreenCapture::CaptureScreenWithCursor(int displayIndex, ImageRGBA &outImag
   return true;
 }
 
-int ScreenCapture::GetDisplayCount() {
+int SystemOutput::GetDisplayCount() {
   // For simplicity return 1; actual multi-display supported in bridge by index.
   return 1;
 }
 
-std::string ScreenCapture::GetDisplayInfo(int index) { return "macOS Display " + std::to_string(index); }
+std::string SystemOutput::GetDisplayInfo(int index) { return "macOS Display " + std::to_string(index); }
 }  // namespace autoalg
 #endif

@@ -150,7 +150,7 @@ bool portal_screenshot_png(std::vector<unsigned char>& out_png) {
 
 namespace autoalg {
 
-bool ScreenCapture::CaptureScreenWithCursor(int displayIndex, ImageRGBA& out) {
+bool SystemOutput::CaptureScreenWithCursor(int displayIndex, ImageRGBA& out) {
   (void)displayIndex;
   if (!is_wayland()) return false;
 
@@ -168,12 +168,12 @@ bool ScreenCapture::CaptureScreenWithCursor(int displayIndex, ImageRGBA& out) {
   return true;
 }
 
-int ScreenCapture::GetDisplayCount() {
+int SystemOutput::GetDisplayCount() {
   if (is_wayland()) return 1;  // portal abstracts monitors
   return 0;
 }
 
-std::string ScreenCapture::GetDisplayInfo(int index) {
+std::string SystemOutput::GetDisplayInfo(int index) {
   (void)index;
   return "Linux Wayland (xdg-desktop-portal)";
 }

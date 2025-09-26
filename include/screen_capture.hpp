@@ -18,7 +18,7 @@ struct ImageRGBA {
   std::vector<uint8_t> pixels;  // RGBA8, size = w*h*4
 };
 
-class ScreenCapture {
+class SystemOutput {
  public:
   // Capture the entire display with cursor blended.
   // displayIndex in [0, GetDisplayCount()).

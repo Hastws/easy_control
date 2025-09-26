@@ -71,7 +71,7 @@ std::vector<Monitor> get_monitors(Display *dpy, Window root) {
 }  // namespace
 
 namespace autoalg {
-bool ScreenCapture::CaptureScreenWithCursor(int displayIndex, ImageRGBA &out) {
+bool SystemOutput::CaptureScreenWithCursor(int displayIndex, ImageRGBA &out) {
   Display *dpy = XOpenDisplay(nullptr);
   if (!dpy) return false;
   int scrIdx = DefaultScreen(dpy);
@@ -131,7 +131,7 @@ bool ScreenCapture::CaptureScreenWithCursor(int displayIndex, ImageRGBA &out) {
   return true;
 }
 
-int ScreenCapture::GetDisplayCount() {
+int SystemOutput::GetDisplayCount() {
   Display *dpy = XOpenDisplay(nullptr);
   if (!dpy) return 0;
   Window root = RootWindow(dpy, DefaultScreen(dpy));
@@ -140,6 +140,6 @@ int ScreenCapture::GetDisplayCount() {
   return (int)mons.size();
 }
 
-std::string ScreenCapture::GetDisplayInfo(int index) { return "Linux X11 Monitor " + std::to_string(index); }
+std::string SystemOutput::GetDisplayInfo(int index) { return "Linux X11 Monitor " + std::to_string(index); }
 }  // namespace autoalg
 #endif

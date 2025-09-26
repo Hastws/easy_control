@@ -17,14 +17,14 @@ int main() {
   std::cout << "tmp=" << TempDir().string() << "\n";
 
   SleepSeconds(2);
-  Input in;
+  SystemInput in;
   // 同步系统光标（mac/Win/X11 有效）
   in.SyncCursorFromSystem();
 
   // // 相对移动 & 单击
   // in.MouseMoveRelative(200, 200);
   // Sleep(2);
-  // in.MouseClick(Input::kLeft);
+  // in.MouseClick(SystemInput::kLeft);
 
   // 滚动
   // in.ScrollLines(3000, -3);
@@ -34,11 +34,11 @@ int main() {
   // int key_c = in.CharToKeyCode('c');
   // if (key_c >= 0) {
   //     // mac: Command，Win: Windows，Linux: Super —— 如要 Ctrl 请替换成 kControl
-  //     in.KeyboardClickWithMods(key_c, Input::kCommand);
+  //     in.KeyboardClickWithMods(key_c, SystemInput::kCommand);
   // }
   SleepSeconds(2);
   // 拖拽示例：按住左键拖 200 像素再抬起
-  in.MouseDragBy(50, 50, Input::kLeft);
+  in.MouseDragBy(50, 50, SystemInput::kLeft);
   SleepSeconds(2);
 
   // 输出当前屏幕尺寸和坐标（内部状态）

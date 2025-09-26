@@ -72,7 +72,7 @@ bool CaptureRectToBitmapWithCursor(const RECT &rc, HBITMAP &outHbmp, int &w, int
 }  // namespace
 
 namespace autoalg {
-bool ScreenCapture::CaptureScreenWithCursor(int displayIndex, ImageRGBA &out) {
+bool SystemOutput::CaptureScreenWithCursor(int displayIndex, ImageRGBA &out) {
   std::vector<MonInfo> mons;
   EnumDisplayMonitors(nullptr, nullptr, EnumMonProc, reinterpret_cast<LPARAM>(&mons));
   if (mons.empty()) return false;
@@ -111,12 +111,12 @@ bool ScreenCapture::CaptureScreenWithCursor(int displayIndex, ImageRGBA &out) {
   return true;
 }
 
-int ScreenCapture::GetDisplayCount() {
+int SystemOutput::GetDisplayCount() {
   std::vector<MonInfo> mons;
   EnumDisplayMonitors(nullptr, nullptr, EnumMonProc, reinterpret_cast<LPARAM>(&mons));
   return (int)mons.size();
 }
 
-std::string ScreenCapture::GetDisplayInfo(int index) { return "Windows Monitor " + std::to_string(index); }
+std::string SystemOutput::GetDisplayInfo(int index) { return "Windows Monitor " + std::to_string(index); }
 }  // namespace autoalg
 #endif

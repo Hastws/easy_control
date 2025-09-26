@@ -102,7 +102,7 @@ int main(int argc, char** argv) {
     prefix = argv[2];
   }
 
-  const int count = autoalg::ScreenCapture::GetDisplayCount();
+  const int count = autoalg::SystemOutput::GetDisplayCount();
   std::printf("Display count reported: %d\n", count);
   if (count > 0 && (display_index < 0 || display_index >= count)) {
     std::fprintf(stderr, "display_index %d out of range [0, %d)\n", display_index, count);
@@ -113,7 +113,7 @@ int main(int argc, char** argv) {
   const int target_index = (count > 0) ? display_index : 0;
 
   autoalg::ImageRGBA img;
-  if (!autoalg::ScreenCapture::CaptureScreenWithCursor(target_index, img)) {
+  if (!autoalg::SystemOutput::CaptureScreenWithCursor(target_index, img)) {
     std::fprintf(stderr, "Capture failed (index=%d)\n", target_index);
     return 2;
   }
