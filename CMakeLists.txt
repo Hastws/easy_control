@@ -145,19 +145,19 @@ if (APPLE)
 endif ()
 
 # 2) 主捕获库：按平台选择性添加源文件
-add_library(autoalg_capture STATIC)
-target_include_directories(autoalg_capture PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+add_library(system_output STATIC)
+target_include_directories(system_output PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # Windows 源
 if (WIN32)
-    target_sources(autoalg_capture PRIVATE
+    target_sources(system_output PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/include/system_output_windows.cpp
     )
 endif ()
 
 # Linux 源
 if (UNIX AND NOT APPLE)
-    target_sources(autoalg_capture PRIVATE
+    target_sources(system_output PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/include/system_output_linux_x11.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/include/system_output_linux_wayland_portal.cpp
     )
@@ -165,9 +165,9 @@ if (UNIX AND NOT APPLE)
     if (AUTOALG_USE_WAYLAND_PORTAL)
         find_package(PkgConfig REQUIRED)
         pkg_check_modules(GLIB REQUIRED glib-2.0 gobject-2.0 gio-2.0)
-        target_compile_definitions(autoalg_capture PRIVATE AUTOALG_USE_WAYLAND_PORTAL=1)
-        target_include_directories(autoalg_capture PRIVATE ${GLIB_INCLUDE_DIRS})
-        target_link_libraries(autoalg_capture PRIVATE ${GLIB_LIBRARIES})
+        target_compile_definitions(system_output PRIVATE AUTOALG_USE_WAYLAND_PORTAL=1)
+        target_include_directories(system_output PRIVATE ${GLIB_INCLUDE_DIRS})
+        target_link_libraries(system_output PRIVATE ${GLIB_LIBRARIES})
 
         include(FetchContent)
         FetchContent_Declare(
@@ -180,42 +180,42 @@ if (UNIX AND NOT APPLE)
                 SUBBUILD_DIR ""
         )
         FetchContent_MakeAvailable(stb)
-        target_include_directories(autoalg_capture PRIVATE ${stb_SOURCE_DIR})
+        target_include_directories(system_output PRIVATE ${stb_SOURCE_DIR})
     else ()
         find_package(PkgConfig REQUIRED)
         pkg_check_modules(X11 REQUIRED x11 xfixes xrandr)
-        target_include_directories(autoalg_capture PRIVATE ${X11_INCLUDE_DIRS})
-        target_link_libraries(autoalg_capture PRIVATE ${X11_LIBRARIES})
+        target_include_directories(system_output PRIVATE ${X11_INCLUDE_DIRS})
+        target_link_libraries(system_output PRIVATE ${X11_LIBRARIES})
     endif ()
 endif ()
 
 # macOS 源 + 依赖桥接库
 if (APPLE)
-    target_sources(autoalg_capture PRIVATE
+    target_sources(system_output PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/include/system_output_mac.cpp
     )
-    target_link_libraries(autoalg_capture PUBLIC mac_bridge)
+    target_link_libraries(system_output PUBLIC mac_bridge)
 endif ()
 
 # demo
-add_executable(capture_demo demo/demo.cpp)
-target_link_libraries(capture_demo PRIVATE autoalg_capture)
+add_executable(system_output_test demo/system_output_test.cpp)
+target_link_libraries(system_output_test PRIVATE system_output)
 
-add_executable(input_demo demo/main.cpp)
-target_link_libraries(input_demo PRIVATE input_sim)
+add_executable(system_input_test demo/system_input_test.cpp)
+target_link_libraries(system_input_test PRIVATE input_sim)
 if (APPLE)
-    target_link_libraries(input_demo PRIVATE
+    target_link_libraries(system_input_test PRIVATE
             ${APP_SERVICES_FRAMEWORK}
             ${FOUNDATION_FRAMEWORK}
     )
 endif ()
 
 add_executable(joint_test demo/joint_test.cpp)
-target_link_libraries(joint_test PRIVATE input_sim autoalg_capture)
+target_link_libraries(joint_test PRIVATE input_sim system_output)
 if (APPLE)
     find_library(FW_APP_SERVICES ApplicationServices)
-    find_library(FW_FOUNDATION    Foundation)
-    find_library(FW_CARBON        Carbon)
+    find_library(FW_FOUNDATION Foundation)
+    find_library(FW_CARBON Carbon)
 
     target_link_libraries(joint_test PRIVATE
             ${APP_SERVICES_FRAMEWORK}
