@@ -24,7 +24,6 @@
 #include <thread>
 #include <vector>
 
-#include "common.hpp"
 #include "system_input.hpp"
 #include "system_output.hpp"
 
