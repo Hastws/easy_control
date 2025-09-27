@@ -15,7 +15,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # =========================
 # Options
 # =========================
-option(INPUT_BUILD_DEMO "Build a tiny input_sim demo" ON)
 option(INPUT_BACKEND_WAYLAND_WLR "Use Wayland (wlroots virtual pointer/keyboard) backend on Linux" OFF)
 option(INPUT_BACKEND_UINPUT "Use uinput backend on Linux" OFF)
 option(INPUT_STRICT_WARNINGS "Enable strict warnings for input_sim" ON)
@@ -91,17 +90,6 @@ elseif (UNIX AND NOT APPLE)
             target_include_directories(input_sim INTERFACE ${X11_INCLUDE_DIR})
         endif ()
         target_compile_definitions(input_sim INTERFACE INPUT_BACKEND_X11=1)
-    endif ()
-endif ()
-
-if (INPUT_BUILD_DEMO)
-    add_executable(input_demo demo/main.cpp)  # 请提供 demo/main.cpp
-    target_link_libraries(input_demo PRIVATE input_sim)
-    if (APPLE)
-        target_link_libraries(input_demo PRIVATE
-                ${APP_SERVICES_FRAMEWORK}
-                ${FOUNDATION_FRAMEWORK}
-        )
     endif ()
 endif ()
 
@@ -213,6 +201,28 @@ endif ()
 add_executable(capture_demo demo/demo.cpp)
 target_link_libraries(capture_demo PRIVATE autoalg_capture)
 
+add_executable(input_demo demo/main.cpp)
+target_link_libraries(input_demo PRIVATE input_sim)
+if (APPLE)
+    target_link_libraries(input_demo PRIVATE
+            ${APP_SERVICES_FRAMEWORK}
+            ${FOUNDATION_FRAMEWORK}
+    )
+endif ()
+
+add_executable(joint_test demo/joint_test.cpp)
+target_link_libraries(joint_test PRIVATE input_sim)
+if (APPLE)
+    target_link_libraries(joint_test PRIVATE
+            ${APP_SERVICES_FRAMEWORK}
+            ${FOUNDATION_FRAMEWORK}
+            ${FW_APP_SERVICES}
+            ${FW_FOUNDATION}
+            ${FW_CARBON}
+            autoalg_capture
+    )
+endif ()
+
 # =========================
 # Messages
 # =========================
@@ -228,7 +238,6 @@ if (UNIX AND NOT APPLE)
         message(STATUS "   Backend : X11 + XTest")
     endif ()
 endif ()
-message(STATUS "   Demo    : ${INPUT_BUILD_DEMO}")
 message(STATUS "-------------------------------------------")
 message(STATUS " screen_capture configured:")
 if (APPLE)
