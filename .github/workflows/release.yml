@@ -1,27 +1,44 @@
 name: build-and-release
+
 on:
   push:
-    tags: [ "v*" ]
-  workflow_dispatch:
+    tags: [ "v*" ]          # 打 tag 如 v0.3.0 触发
+  workflow_dispatch:         # 手动触发
+
+# 让 gh-release 能写入 Release
+permissions:
+  contents: write
+
+concurrency:
+  group: build-and-release-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     name: ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
 
     steps:
       - uses: actions/checkout@v4
-        with: { submodules: 'true' }
+        with:
+          submodules: true
 
+      # ---------- Deps ----------
       - name: Deps (Ubuntu)
         if: startsWith(matrix.os, 'ubuntu')
         run: |
           sudo apt-get update
+          # 基础构建 + 打包工具
           sudo apt-get install -y cmake ninja-build pkg-config nsis
-          # 可按需：sudo apt-get install -y libx11-dev libxtst-dev libxkbcommon-x11-dev libxrandr-dev libxfixes-dev
+          # X11 相关开发头（你的 CMake 会用到 x11/xrandr/xfixes/xtst）
+          sudo apt-get install -y \
+            libx11-dev libxtst-dev libxrandr-dev libxfixes-dev
+          # 如需 Wayland/portal 分支可加：
+          # sudo apt-get install -y libwayland-dev libglib2.0-dev
 
       - name: Deps (macOS)
         if: startsWith(matrix.os, 'macos')
@@ -35,6 +52,7 @@ jobs:
         run: |
           choco install -y ninja nsis
 
+      # ---------- Configure / Build / Package ----------
       - name: Configure
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
@@ -44,6 +62,7 @@ jobs:
       - name: Package
         run: cmake --build build --target package --config Release
 
+      # ---------- Upload per-OS artifacts ----------
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -54,18 +73,21 @@ jobs:
             build/*.txz
             build/*.exe
             build/*.msi
+          if-no-files-found: ignore
 
   release:
     needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
-        with: { path: dist }
+        with:
+          path: dist
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: dist/**/*
-          token: ${{ secrets.GITHUB_TOKEN }}
           generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
