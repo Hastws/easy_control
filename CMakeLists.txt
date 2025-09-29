@@ -72,7 +72,7 @@ if (AUTOALG_SEMVER STREQUAL AUTOALG_DEFAULT_SEMVER)
     set(EASY_GIT_DIRTY 1)
 endif ()
 
-project(autoalg_all VERSION ${AUTOALG_SEMVER} LANGUAGES C CXX)
+project(easy_control VERSION ${AUTOALG_SEMVER} LANGUAGES C CXX)
 
 if (APPLE)
     enable_language(OBJCXX)
@@ -90,7 +90,7 @@ message(STATUS "[easy_control] version: ${AUTOALG_VERSION_FULL}  (describe='${EA
 # =========================
 option(INPUT_BACKEND_WAYLAND_WLR "Use Wayland (wlroots virtual pointer/keyboard) backend on Linux" OFF)
 option(INPUT_BACKEND_UINPUT "Use uinput backend on Linux" OFF)
-option(INPUT_STRICT_WARNINGS "Enable strict warnings for input_sim" ON)
+option(INPUT_STRICT_WARNINGS "Enable strict warnings for system_input" ON)
 option(AUTOALG_USE_WAYLAND_PORTAL "Use xdg-desktop-portal on Linux/Wayland for screen capture" OFF)
 option(EASY_CONTROL_BUILD_DEMOS "Build demos (not installed/exported)" ON)
 
@@ -106,26 +106,26 @@ configure_file(
 )
 
 # =========================
-# input_sim: header-only
+# system_input: header-only
 # =========================
-add_library(input_sim INTERFACE)
-target_include_directories(input_sim INTERFACE
+add_library(system_input INTERFACE)
+target_include_directories(system_input INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated>     # 让构建时能找到 easy_control/version.h
         $<INSTALL_INTERFACE:include>
 )
-target_compile_features(input_sim INTERFACE cxx_std_17)
-add_library(easy_control::input_sim ALIAS input_sim)
+target_compile_features(system_input INTERFACE cxx_std_17)
+add_library(easy_control::system_input ALIAS system_input)
 
 if (MSVC)
-    target_compile_definitions(input_sim INTERFACE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
+    target_compile_definitions(system_input INTERFACE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
 endif ()
 
 if (INPUT_STRICT_WARNINGS)
     if (MSVC)
-        target_compile_options(input_sim INTERFACE /W4)
+        target_compile_options(system_input INTERFACE /W4)
     else ()
-        target_compile_options(input_sim INTERFACE -Wall -Wextra -Wpedantic)
+        target_compile_options(system_input INTERFACE -Wall -Wextra -Wpedantic)
     endif ()
 endif ()
 
@@ -135,32 +135,32 @@ if (APPLE)
     if (NOT APP_SERVICES_FRAMEWORK OR NOT FOUNDATION_FRAMEWORK)
         message(FATAL_ERROR "macOS frameworks not found: ApplicationServices / Foundation")
     endif ()
-    target_link_libraries(input_sim INTERFACE
+    target_link_libraries(system_input INTERFACE
             "${APP_SERVICES_FRAMEWORK}"
             "${FOUNDATION_FRAMEWORK}"
     )
 elseif (WIN32)
-    # target_link_libraries(input_sim INTERFACE user32) # optional
+    # target_link_libraries(system_input INTERFACE user32) # optional
 elseif (UNIX AND NOT APPLE)
     include(CheckIncludeFile)
     include(FindPkgConfig)
     if (INPUT_BACKEND_WAYLAND_WLR)
         pkg_check_modules(WAYLAND REQUIRED wayland-client)
-        target_link_libraries(input_sim INTERFACE ${WAYLAND_LINK_LIBRARIES})
-        target_include_directories(input_sim INTERFACE ${WAYLAND_INCLUDE_DIRS})
-        target_compile_definitions(input_sim INTERFACE INPUT_BACKEND_WAYLAND_WLR=1)
+        target_link_libraries(system_input INTERFACE ${WAYLAND_LINK_LIBRARIES})
+        target_include_directories(system_input INTERFACE ${WAYLAND_INCLUDE_DIRS})
+        target_compile_definitions(system_input INTERFACE INPUT_BACKEND_WAYLAND_WLR=1)
     elseif (INPUT_BACKEND_UINPUT)
         check_include_file("linux/uinput.h" HAVE_UINPUT_H)
         if (NOT HAVE_UINPUT_H)
             message(FATAL_ERROR "linux/uinput.h not found. Install kernel headers or uinput dev package.")
         endif ()
-        target_compile_definitions(input_sim INTERFACE INPUT_BACKEND_UINPUT=1)
+        target_compile_definitions(system_input INTERFACE INPUT_BACKEND_UINPUT=1)
     else ()
         if (PKG_CONFIG_FOUND)
             pkg_check_modules(X11 REQUIRED x11)
             pkg_check_modules(XTST REQUIRED xtst)
-            target_include_directories(input_sim INTERFACE ${X11_INCLUDE_DIRS} ${XTST_INCLUDE_DIRS})
-            target_link_libraries(input_sim INTERFACE ${X11_LIBRARIES} ${XTST_LIBRARIES})
+            target_include_directories(system_input INTERFACE ${X11_INCLUDE_DIRS} ${XTST_INCLUDE_DIRS})
+            target_link_libraries(system_input INTERFACE ${X11_LIBRARIES} ${XTST_LIBRARIES})
         else ()
             find_package(X11 REQUIRED)
             if (NOT X11_XTest_LIB)
@@ -168,13 +168,13 @@ elseif (UNIX AND NOT APPLE)
                 if (NOT XTST_LIB)
                     message(FATAL_ERROR "X11 found but Xtst not found. Install libxtst-dev.")
                 endif ()
-                target_link_libraries(input_sim INTERFACE ${X11_LIBRARIES} ${XTST_LIB})
+                target_link_libraries(system_input INTERFACE ${X11_LIBRARIES} ${XTST_LIB})
             else ()
-                target_link_libraries(input_sim INTERFACE ${X11_LIBRARIES} ${X11_XTest_LIB})
+                target_link_libraries(system_input INTERFACE ${X11_LIBRARIES} ${X11_XTest_LIB})
             endif ()
-            target_include_directories(input_sim INTERFACE ${X11_INCLUDE_DIR})
+            target_include_directories(system_input INTERFACE ${X11_INCLUDE_DIR})
         endif ()
-        target_compile_definitions(input_sim INTERFACE INPUT_BACKEND_X11=1)
+        target_compile_definitions(system_input INTERFACE INPUT_BACKEND_X11=1)
     endif ()
 endif ()
 
@@ -275,7 +275,7 @@ if (EASY_CONTROL_BUILD_DEMOS)
     target_link_libraries(system_output_test PRIVATE system_output)
 
     add_executable(system_input_test demo/system_input_test.cpp)
-    target_link_libraries(system_input_test PRIVATE input_sim)
+    target_link_libraries(system_input_test PRIVATE system_input)
     if (APPLE)
         target_link_libraries(system_input_test PRIVATE
                 ${APP_SERVICES_FRAMEWORK}
@@ -284,7 +284,7 @@ if (EASY_CONTROL_BUILD_DEMOS)
     endif ()
 
     add_executable(joint_test demo/joint_test.cpp)
-    target_link_libraries(joint_test PRIVATE input_sim system_output)
+    target_link_libraries(joint_test PRIVATE system_input system_output)
     if (APPLE)
         find_library(FW_APP_SERVICES ApplicationServices)
         find_library(FW_FOUNDATION Foundation)
@@ -324,7 +324,7 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/generated/easy_control/version.h"
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/easy_control)
 
 # 统一导出：只导出库（不含 demos）
-install(TARGETS input_sim system_output
+install(TARGETS system_input system_output
         EXPORT easy_controlTargets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -402,7 +402,7 @@ include(CPack)
 
 set(CPACK_PACKAGE_NAME "easy-control")
 set(CPACK_PACKAGE_VENDOR "AutoAlg")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "easy_control: input_sim + system_output cross-platform library")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "easy_control: system_input + system_output cross-platform library")
 set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/hastws/easy_control")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
