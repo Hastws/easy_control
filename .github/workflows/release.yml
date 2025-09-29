@@ -2,10 +2,9 @@ name: build-and-release
 
 on:
   push:
-    tags: [ "v*" ]          # 打 tag 如 v0.3.0 触发
-  workflow_dispatch:         # 手动触发
+    tags: ["v*"]
+  workflow_dispatch:
 
-# 让 gh-release 能写入 Release
 permissions:
   contents: write
 
@@ -20,24 +19,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: true
+          fetch-depth: 0      # ★ 确保拿到 tags，git describe/版本派生才正常
 
       # ---------- Deps ----------
       - name: Deps (Ubuntu)
         if: startsWith(matrix.os, 'ubuntu')
         run: |
           sudo apt-get update
-          # 基础构建 + 打包工具
-          sudo apt-get install -y cmake ninja-build pkg-config nsis
-          # X11 相关开发头（你的 CMake 会用到 x11/xrandr/xfixes/xtst）
-          sudo apt-get install -y \
-            libx11-dev libxtst-dev libxrandr-dev libxfixes-dev
-          # 如需 Wayland/portal 分支可加：
+          sudo apt-get install -y cmake ninja-build pkg-config nsis \
+                                  dpkg-dev \
+                                  libx11-dev libxtst-dev libxrandr-dev libxfixes-dev
+          # 如启用 Wayland portal：
           # sudo apt-get install -y libwayland-dev libglib2.0-dev
 
       - name: Deps (macOS)
@@ -49,8 +47,7 @@ jobs:
       - name: Deps (Windows)
         if: startsWith(matrix.os, 'windows')
         shell: pwsh
-        run: |
-          choco install -y ninja nsis
+        run: choco install -y ninja nsis
 
       # ---------- Configure / Build / Package ----------
       - name: Configure
@@ -59,8 +56,16 @@ jobs:
       - name: Build
         run: cmake --build build --config Release
 
-      - name: Package
+      - name: Package (CPack)
         run: cmake --build build --target package --config Release
+
+      # ★ 可视化：看看到底产出了什么
+      - name: List outputs
+        run: |
+          echo "== build root =="
+          ls -lah build || true
+          echo "== CPack staging (if any) =="
+          find build/_CPack_Packages -maxdepth 3 -type f -ls 2>/dev/null || true
 
       # ---------- Upload per-OS artifacts ----------
       - name: Upload artifacts
@@ -71,9 +76,18 @@ jobs:
             build/*.deb
             build/*.zip
             build/*.txz
+            build/*.tar.gz
+            build/*.dmg
+            build/*.pkg
             build/*.exe
             build/*.msi
-          if-no-files-found: ignore
+            build/_CPack_Packages/**/DEB/*.deb
+            build/_CPack_Packages/**/ZIP/*.zip
+            build/_CPack_Packages/**/TXZ/*.txz
+            build/_CPack_Packages/**/TGZ/*.tar.gz
+            build/_CPack_Packages/**/Bundle/*.dmg
+            build/_CPack_Packages/**/productbuild/*.pkg
+          if-no-files-found: warn   # 便于发现没打出来包的 OS
 
   release:
     needs: build
@@ -82,6 +96,11 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: dist
+
+      - name: Show downloaded files
+        run: |
+          echo "== dist =="
+          find dist -type f -maxdepth 4 -ls
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
