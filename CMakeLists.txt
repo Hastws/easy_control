@@ -92,7 +92,7 @@ option(INPUT_BACKEND_WAYLAND_WLR "Use Wayland (wlroots virtual pointer/keyboard)
 option(INPUT_BACKEND_UINPUT "Use uinput backend on Linux" OFF)
 option(INPUT_STRICT_WARNINGS "Enable strict warnings for system_input" ON)
 option(AUTOALG_USE_WAYLAND_PORTAL "Use xdg-desktop-portal on Linux/Wayland for screen capture" OFF)
-option(EASY_CONTROL_BUILD_DEMOS "Build demos (not installed/exported)" ON)
+option(EASY_CONTROL_BUILD_DEMOS "Build demos (not installed/exported)" OFF)
 
 # =========================
 # 生成版本头文件（供 #include <easy_control/version.h>）
