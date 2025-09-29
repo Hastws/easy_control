@@ -25,15 +25,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
-          fetch-depth: 0      # ★ 确保拿到 tags，git describe/版本派生才正常
+          fetch-depth: 0      # 确保拿到 tags，git describe/版本派生才正常
 
       # ---------- Deps ----------
       - name: Deps (Ubuntu)
         if: startsWith(matrix.os, 'ubuntu')
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build pkg-config nsis \
-                                  dpkg-dev \
+          sudo apt-get install -y cmake ninja-build pkg-config nsis dpkg-dev \
                                   libx11-dev libxtst-dev libxrandr-dev libxfixes-dev
           # 如启用 Wayland portal：
           # sudo apt-get install -y libwayland-dev libglib2.0-dev
@@ -54,42 +53,40 @@ jobs:
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
-        run: cmake --build build --config Release
+        run: cmake --build build --config Release --parallel
 
       - name: Package (CPack)
         run: cmake --build build --target package --config Release
 
-      # ★ 可视化：看看到底产出了什么
+      # 可视化：看产出
       - name: List outputs
-        shell: bash         # ★ 在 Windows 上也用 bash 运行
+        shell: bash
         run: |
           echo "== build root =="
           ls -lah build || true
           echo "== CPack staging (if any) =="
-          find build/_CPack_Packages -maxdepth 3 -type f -print 2>/dev/null || true
-
+          find build/_CPack_Packages -maxdepth 4 -type f -print 2>/dev/null || true
 
       # ---------- Upload per-OS artifacts ----------
+      # 仅上传打包产物（过滤 demo 可执行文件）
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os }}-packages
           path: |
+            # Linux
             build/*.deb
-            build/*.zip
-            build/*.txz
             build/*.tar.gz
-            build/*.dmg
-            build/*.pkg
-            build/*.exe
-            build/*.msi
             build/_CPack_Packages/**/DEB/*.deb
-            build/_CPack_Packages/**/ZIP/*.zip
-            build/_CPack_Packages/**/TXZ/*.txz
             build/_CPack_Packages/**/TGZ/*.tar.gz
-            build/_CPack_Packages/**/Bundle/*.dmg
+            # macOS
+            build/*.pkg
+            build/*.dmg
             build/_CPack_Packages/**/productbuild/*.pkg
-          if-no-files-found: warn   # 便于发现没打出来包的 OS
+            build/_CPack_Packages/**/DragNDrop/*.dmg
+            # Windows（仅 NSIS 安装器；排除 demo exe）
+            build/*easy_control-*.exe
+          if-no-files-found: warn
 
   release:
     needs: build
@@ -104,11 +101,56 @@ jobs:
           echo "== dist =="
           find dist -type f -maxdepth 4 -ls
 
+      # 归并、去重并规范文件名（只挑期望的安装包）
+      - name: Normalize filenames (dedupe basenames)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/release
+
+          # 只收集目标发行包类型；不要把 demo 可执行文件带上
+          mapfile -t files < <(find dist -type f \( \
+              -name 'easy_control-*.deb' -o \
+              -name 'easy_control-*.tar.gz' -o \
+              -name 'easy_control-*.dmg' -o \
+              -name 'easy_control-*.pkg' -o \
+              -name 'easy_control-*.exe' \
+            \) -print | sort)
+
+          echo "Found packages:"
+          printf '  %s\n' "${files[@]}"
+
+          # 扁平化到 dist/release；若重名，用来源目录作为前缀去重
+          for f in "${files[@]}"; do
+            base="$(basename "$f")"
+            target="dist/release/${base}"
+            if [[ -e "$target" ]]; then
+              parent="$(basename "$(dirname "$f")")"
+              target="dist/release/${parent}-${base}"
+              i=1
+              while [[ -e "$target" ]]; do
+                target="dist/release/${parent}-${i}-${base}"
+                i=$((i+1))
+              done
+            fi
+            cp -f "$f" "$target"
+          done
+
+          echo "== release payload =="
+          ls -lah dist/release
+
+      # 只上传 dist/release/ 下的文件，杜绝重复匹配
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/**/*
           generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            dist/release/easy_control-*.deb
+            dist/release/easy_control-*.tar.gz
+            dist/release/easy_control-*.dmg
+            dist/release/easy_control-*.pkg
+            dist/release/easy_control-*.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
