@@ -2,7 +2,7 @@ name: build-and-release
 
 on:
   push:
-    tags: [ "v*" ]
+    tags: [ "v*" ]          # 打 tag 如 v0.0.6 触发
   workflow_dispatch:
 
 permissions:
@@ -25,7 +25,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
-          fetch-depth: 0      # 确保拿到 tags，git describe/版本派生才正常
+          fetch-depth: 0      # 确保 git describe 能拿到 tags
 
       # ---------- Deps ----------
       - name: Deps (Ubuntu)
@@ -48,27 +48,43 @@ jobs:
         shell: pwsh
         run: choco install -y ninja nsis
 
-      # ---------- Configure / Build / Package ----------
+      # ---------- Configure ----------
       - name: Configure
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
+      # ---------- Build ----------
       - name: Build
         run: cmake --build build --config Release --parallel
 
-      - name: Package (CPack)
-        run: cmake --build build --target package --config Release
+      # ---------- Package (OS-specific) ----------
+      - name: Package on Linux (.deb + .tar.gz)
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          cmake --build build --target package --config Release -- \
+            -DCPACK_GENERATOR=DEB;TGZ
 
-      # 可视化：看产出
+      - name: Package on macOS (.pkg + .dmg)
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          cmake --build build --target package --config Release -- \
+            -DCPACK_GENERATOR=productbuild;DragNDrop
+
+      - name: Package on Windows (NSIS .exe)
+        if: startsWith(matrix.os, 'windows')
+        run: |
+          cmake --build build --target package --config Release -- \
+            -DCPACK_GENERATOR=NSIS
+
+      # 可视化
       - name: List outputs
         shell: bash
         run: |
           echo "== build root =="
           ls -lah build || true
-          echo "== CPack staging (if any) =="
+          echo "== CPack staging =="
           find build/_CPack_Packages -maxdepth 4 -type f -print 2>/dev/null || true
 
       # ---------- Upload per-OS artifacts ----------
-      # 仅上传打包产物（过滤 demo 可执行文件）
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -84,7 +100,7 @@ jobs:
             build/*.dmg
             build/_CPack_Packages/**/productbuild/*.pkg
             build/_CPack_Packages/**/DragNDrop/*.dmg
-            # Windows（仅 NSIS 安装器；排除 demo exe）
+            # Windows（仅安装器；不带 demo exe）
             build/*easy_control-*.exe
           if-no-files-found: warn
 
@@ -96,19 +112,14 @@ jobs:
         with:
           path: dist
 
-      - name: Show downloaded files
-        run: |
-          echo "== dist =="
-          find dist -type f -maxdepth 4 -ls
-
-      # 归并、去重并规范文件名（只挑期望的安装包）
+      # 归并、去重、规范文件名
       - name: Normalize filenames (dedupe basenames)
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p dist/release
 
-          # 只收集目标发行包类型；不要把 demo 可执行文件带上
+          # 只收集预期的发行包类型；不要把 demo 可执行文件带上
           mapfile -t files < <(find dist -type f \( \
               -name 'easy_control-*.deb' -o \
               -name 'easy_control-*.tar.gz' -o \
@@ -139,18 +150,28 @@ jobs:
           echo "== release payload =="
           ls -lah dist/release
 
-      # 只上传 dist/release/ 下的文件，杜绝重复匹配
+      # 动态收集已存在文件，避免 unmatched_files 报错
+      - name: Collect release files
+        id: collect
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "files<<EOF" >> "$GITHUB_OUTPUT"
+          shopt -s nullglob
+          for f in dist/release/easy_control-*.*; do
+            echo "$f"
+          done
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+          echo "== Will upload:"
+          printf '  %s\n' ${{ steps.collect.outputs.files || '' }} || true
+
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          fail_on_unmatched_files: true
-          files: |
-            dist/release/easy_control-*.deb
-            dist/release/easy_control-*.tar.gz
-            dist/release/easy_control-*.dmg
-            dist/release/easy_control-*.pkg
-            dist/release/easy_control-*.exe
+          fail_on_unmatched_files: true     # 现在安全：我们只传确实存在的文件
+          files: ${{ steps.collect.outputs.files }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
