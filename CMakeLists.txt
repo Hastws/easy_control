@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT.
 
 cmake_minimum_required(VERSION 3.10)
-project(autoalg_all VERSION 0.3.0 LANGUAGES C CXX)
+project(autoalg_all VERSION 0.0.3 LANGUAGES C CXX)
 
 if (APPLE)
     enable_language(OBJCXX)
