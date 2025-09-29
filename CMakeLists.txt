@@ -398,7 +398,6 @@ message(STATUS "===========================================")
 # =========================
 # CPack（跨平台打包：ZIP/DEB/NSIS/Txz）
 # =========================
-include(CPack)
 
 set(CPACK_PACKAGE_NAME "easy-control")
 set(CPACK_PACKAGE_VENDOR "AutoAlg")
@@ -429,3 +428,5 @@ if (UNIX AND NOT APPLE)
     set(CPACK_SET_DESTDIR ON)
     set(CMAKE_INSTALL_PREFIX "/usr")
 endif ()
+
+include(CPack)
