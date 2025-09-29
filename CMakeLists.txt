@@ -3,7 +3,76 @@
 # SPDX-License-Identifier: MIT.
 
 cmake_minimum_required(VERSION 3.10)
-project(autoalg_all VERSION 0.0.3 LANGUAGES C CXX)
+
+# ===== auto version from Git (before project) =====
+set(AUTOALG_DEFAULT_SEMVER "0.0.0")
+set(AUTOALG_SEMVER "${AUTOALG_DEFAULT_SEMVER}")  # 仅 x.y.z，传给 project()
+set(AUTOALG_PKG_SUFFIX "")                       # 如 +5.gabc1234 或 .dirty 组合
+set(AUTOALG_VERSION_FULL "")                     # 展示/打包用：x.y.z+...
+
+# 额外暴露给头文件的变量
+set(EASY_GIT_DESCRIBE "")
+set(EASY_GIT_SHA "")
+set(EASY_GIT_DIRTY 0)
+
+function(_easy_random_suffix out)
+    string(TIMESTAMP _d "%Y%m%d-%H%M%S" UTC)
+    string(RANDOM LENGTH 6 ALPHABET 0123456789abcdef _r)
+    set(${out} "${_d}-${_r}" PARENT_SCOPE)
+endfunction()
+
+find_program(GIT_EXE git)
+if (GIT_EXE AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
+    execute_process(
+            COMMAND ${GIT_EXE} -C ${CMAKE_CURRENT_SOURCE_DIR} describe --tags --dirty --abbrev=7
+            OUTPUT_VARIABLE _desc
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            RESULT_VARIABLE _rc
+    )
+    if (_rc EQUAL 0 AND NOT _desc STREQUAL "")
+        set(EASY_GIT_DESCRIBE "${_desc}")
+        string(REGEX REPLACE "^v" "" _desc "${_desc}") # 允许 tag 带 v 前缀
+        # 形如 1.2.3-5-gabc1234[-dirty] 或 1.2.3[-dirty]
+        if (_desc MATCHES "^([0-9]+)\\.([0-9]+)\\.([0-9]+)(-([0-9]+)-g([0-9a-f]+))?(-dirty)?$")
+            set(AUTOALG_SEMVER "${CMAKE_MATCH_1}.${CMAKE_MATCH_2}.${CMAKE_MATCH_3}")
+            if (CMAKE_MATCH_5) # 距离上次 tag 的提交数 + 哈希
+                set(AUTOALG_PKG_SUFFIX "+${CMAKE_MATCH_5}.g${CMAKE_MATCH_6}")
+                set(EASY_GIT_SHA "${CMAKE_MATCH_6}")
+            endif ()
+            if (CMAKE_MATCH_7) # 工作区脏
+                if (AUTOALG_PKG_SUFFIX)
+                    set(AUTOALG_PKG_SUFFIX "${AUTOALG_PKG_SUFFIX}.dirty")
+                else ()
+                    set(AUTOALG_PKG_SUFFIX "+dirty")
+                endif ()
+                set(EASY_GIT_DIRTY 1)
+            endif ()
+        endif ()
+    endif ()
+endif ()
+
+# 没有符合规则的 tag → 强制显示 dirty
+if (AUTOALG_SEMVER STREQUAL AUTOALG_DEFAULT_SEMVER)
+    if (GIT_EXE AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
+        execute_process(
+                COMMAND ${GIT_EXE} -C ${CMAKE_CURRENT_SOURCE_DIR} rev-parse --short=7 HEAD
+                OUTPUT_VARIABLE _sha
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+                RESULT_VARIABLE _rc2
+        )
+        if (DEFINED _sha AND _rc2 EQUAL 0)
+            set(EASY_GIT_SHA "${_sha}")
+        endif ()
+    endif ()
+    if (EASY_GIT_SHA STREQUAL "")
+        _easy_random_suffix(_rnd)
+        set(EASY_GIT_SHA "${_rnd}")
+    endif ()
+    set(AUTOALG_PKG_SUFFIX "+dirty-${EASY_GIT_SHA}") # ★ 按你的要求，无 tag 时显示 dirty
+    set(EASY_GIT_DIRTY 1)
+endif ()
+
+project(autoalg_all VERSION ${AUTOALG_SEMVER} LANGUAGES C CXX)
 
 if (APPLE)
     enable_language(OBJCXX)
@@ -11,6 +80,10 @@ endif ()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# 完整版本串（展示/打包可用）
+set(AUTOALG_VERSION_FULL "${PROJECT_VERSION}${AUTOALG_PKG_SUFFIX}")
+message(STATUS "[easy_control] version: ${AUTOALG_VERSION_FULL}  (describe='${EASY_GIT_DESCRIBE}', sha='${EASY_GIT_SHA}', dirty=${EASY_GIT_DIRTY})")
 
 # =========================
 # Options
@@ -22,15 +95,26 @@ option(AUTOALG_USE_WAYLAND_PORTAL "Use xdg-desktop-portal on Linux/Wayland for s
 option(EASY_CONTROL_BUILD_DEMOS "Build demos (not installed/exported)" ON)
 
 # =========================
+# 生成版本头文件（供 #include <easy_control/version.h>）
+# =========================
+set(EASY_VER_OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated/easy_control")
+file(MAKE_DIRECTORY "${EASY_VER_OUTDIR}")
+configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/easy_control_version.h.in"
+        "${EASY_VER_OUTDIR}/version.h"
+        @ONLY
+)
+
+# =========================
 # input_sim: header-only
 # =========================
 add_library(input_sim INTERFACE)
 target_include_directories(input_sim INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated>     # 让构建时能找到 easy_control/version.h
         $<INSTALL_INTERFACE:include>
 )
 target_compile_features(input_sim INTERFACE cxx_std_17)
-# 统一命名空间别名
 add_library(easy_control::input_sim ALIAS input_sim)
 
 if (MSVC)
@@ -109,6 +193,7 @@ if (APPLE)
     )
     target_include_directories(mac_bridge PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated>
             $<INSTALL_INTERFACE:include>
     )
 
@@ -130,6 +215,7 @@ endif ()
 add_library(system_output STATIC)
 target_include_directories(system_output PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated>
         $<INSTALL_INTERFACE:include>
 )
 add_library(easy_control::system_output ALIAS system_output)
@@ -218,8 +304,24 @@ endif ()
 # =========================
 include(GNUInstallDirs)
 
-# 头文件
-install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+# 只安装头文件；不把同目录下的 .cpp/.mm 等源文件装进系统
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        FILES_MATCHING
+        PATTERN "*.h" PATTERN "*.hpp" PATTERN "*.hh" PATTERN "*.hxx"
+        PATTERN "*.inc" PATTERN "*.inl" PATTERN "*.ipp"
+        PATTERN "*.c" EXCLUDE
+        PATTERN "*.cc" EXCLUDE
+        PATTERN "*.cxx" EXCLUDE
+        PATTERN "*.cpp" EXCLUDE
+        PATTERN "*.m" EXCLUDE
+        PATTERN "*.mm" EXCLUDE
+        PATTERN "*.S" EXCLUDE
+        PATTERN "*.asm" EXCLUDE
+)
+
+# 安装生成的版本头文件到 include/easy_control
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/generated/easy_control/version.h"
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/easy_control)
 
 # 统一导出：只导出库（不含 demos）
 install(TARGETS input_sim system_output
@@ -304,6 +406,13 @@ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "easy_control: input_sim + system_output c
 set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/hastws/easy_control")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
+
+# 让包名包含提交/dirty 后缀（若存在）
+if (AUTOALG_PKG_SUFFIX)
+    set(CPACK_PACKAGE_VERSION_SUFFIX "${AUTOALG_PKG_SUFFIX}")
+endif ()
+# （可选）完全自定义文件名：
+# set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${AUTOALG_VERSION_FULL}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
 
 # 生成多种包：Windows/ZIP/NSIS，macOS/ZIP/TXZ，Linux/DEB
 set(CPACK_GENERATOR "ZIP;TXZ;DEB;NSIS")
