@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT.
 
 cmake_minimum_required(VERSION 3.10)
-project(autoalg_all LANGUAGES C CXX)
+project(autoalg_all VERSION 0.3.0 LANGUAGES C CXX)
 
 if (APPLE)
     enable_language(OBJCXX)
@@ -43,7 +43,6 @@ if (INPUT_STRICT_WARNINGS)
 endif ()
 
 if (APPLE)
-    # macOS: 常见输入模拟/系统服务来自 ApplicationServices（覆盖 CoreGraphics 等）
     find_library(APP_SERVICES_FRAMEWORK ApplicationServices)
     find_library(FOUNDATION_FRAMEWORK Foundation)
     if (NOT APP_SERVICES_FRAMEWORK OR NOT FOUNDATION_FRAMEWORK)
@@ -54,8 +53,7 @@ if (APPLE)
             "${FOUNDATION_FRAMEWORK}"
     )
 elseif (WIN32)
-    # 需要时可打开
-    # target_link_libraries(input_sim INTERFACE user32)
+    # target_link_libraries(input_sim INTERFACE user32) # 可按需
 elseif (UNIX AND NOT APPLE)
     include(CheckIncludeFile)
     include(FindPkgConfig)
@@ -93,32 +91,11 @@ elseif (UNIX AND NOT APPLE)
     endif ()
 endif ()
 
-include(GNUInstallDirs)
-install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-install(TARGETS input_sim EXPORT input_simTargets)
-install(EXPORT input_simTargets
-        FILE input_simTargets.cmake
-        NAMESPACE autoalg::
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/autoalg_input_sim
-)
-
-include(CMakePackageConfigHelpers)
-configure_package_config_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/autoalg_input_simConfig.cmake.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/autoalg_input_simConfig.cmake"
-        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/autoalg_input_sim
-        NO_CHECK_REQUIRED_COMPONENTS_MACRO
-)
-install(FILES
-        "${CMAKE_CURRENT_BINARY_DIR}/autoalg_input_simConfig.cmake"
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/autoalg_input_sim
-)
-
 # =========================
 # screen capture libraries
 # =========================
 
-# 1) mac 桥接库：只在 APPLE 下存在（.mm 用 ARC）
+# 1) mac 桥接库（仅 macOS）
 if (APPLE)
     add_library(mac_bridge STATIC
             ${CMAKE_CURRENT_SOURCE_DIR}/include/mac_bridge.mm
@@ -127,15 +104,16 @@ if (APPLE)
             ${CMAKE_CURRENT_SOURCE_DIR}/include/mac_bridge.mm
             PROPERTIES COMPILE_FLAGS "-fobjc-arc"
     )
-    target_include_directories(mac_bridge PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    target_include_directories(mac_bridge PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+            $<INSTALL_INTERFACE:include>
+    )
 
-    # 找到框架
     find_library(SCREENCAPTUREKIT_FRAMEWORK ScreenCaptureKit REQUIRED)
     find_library(COREGRAPHICS_FRAMEWORK CoreGraphics REQUIRED)
     find_library(APP_SERVICES_FRAMEWORK ApplicationServices REQUIRED)
     find_library(FOUNDATION_FRAMEWORK Foundation REQUIRED)
 
-    # 关键：ScreenCaptureKit 用 PUBLIC，让依赖它的目标自动继承链接项
     target_link_libraries(mac_bridge PUBLIC
             ${SCREENCAPTUREKIT_FRAMEWORK}
             ${COREGRAPHICS_FRAMEWORK}
@@ -144,9 +122,12 @@ if (APPLE)
     )
 endif ()
 
-# 2) 主捕获库：按平台选择性添加源文件
+# 2) 主捕获库
 add_library(system_output STATIC)
-target_include_directories(system_output PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(system_output PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+)
 
 # Windows 源
 if (WIN32)
@@ -197,7 +178,7 @@ if (APPLE)
     target_link_libraries(system_output PUBLIC mac_bridge)
 endif ()
 
-# demo
+# ===== demo（不安装） =====
 add_executable(system_output_test demo/system_output_test.cpp)
 target_link_libraries(system_output_test PRIVATE system_output)
 
@@ -216,7 +197,6 @@ if (APPLE)
     find_library(FW_APP_SERVICES ApplicationServices)
     find_library(FW_FOUNDATION Foundation)
     find_library(FW_CARBON Carbon)
-
     target_link_libraries(joint_test PRIVATE
             ${APP_SERVICES_FRAMEWORK}
             ${FOUNDATION_FRAMEWORK}
@@ -225,6 +205,75 @@ if (APPLE)
             ${FW_CARBON}
     )
 endif ()
+
+# =========================
+# Install & Package
+# =========================
+include(GNUInstallDirs)
+
+# 头文件
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+# input_sim：沿用你已有的导出
+install(TARGETS input_sim EXPORT input_simTargets)
+install(EXPORT input_simTargets
+        FILE input_simTargets.cmake
+        NAMESPACE autoalg::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/autoalg_input_sim
+)
+
+# 其余库参与 autoalg_all 的导出
+install(TARGETS system_output
+        EXPORT autoalg_allTargets
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+if (APPLE)
+    install(TARGETS mac_bridge
+            EXPORT autoalg_allTargets
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
+endif ()
+
+install(EXPORT autoalg_allTargets
+        FILE autoalg_allTargets.cmake
+        NAMESPACE autoalg::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/autoalg_all
+)
+
+# 生成 Config.cmake + Version.cmake（主包：autoalg_all）
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+        "${CMAKE_CURRENT_BINARY_DIR}/autoalg_allConfigVersion.cmake"
+        VERSION ${PROJECT_VERSION}
+        COMPATIBILITY SameMajorVersion
+)
+configure_package_config_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/autoalg_allConfig.cmake.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/autoalg_allConfig.cmake"
+        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/autoalg_all
+        NO_CHECK_REQUIRED_COMPONENTS_MACRO
+)
+install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/autoalg_allConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/autoalg_allConfigVersion.cmake"
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/autoalg_all
+)
+
+# 你已有的 input_sim Config（保持）
+configure_package_config_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/autoalg_input_simConfig.cmake.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/autoalg_input_simConfig.cmake"
+        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/autoalg_input_sim
+        NO_CHECK_REQUIRED_COMPONENTS_MACRO
+)
+install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/autoalg_input_simConfig.cmake"
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/autoalg_input_sim
+)
 
 # =========================
 # Messages
@@ -255,3 +304,28 @@ elseif (WIN32)
     message(STATUS "   Windows: win32 capture backend")
 endif ()
 message(STATUS "===========================================")
+
+# =========================
+# CPack（跨平台打包：ZIP/DEB/NSIS/Txz）
+# =========================
+include(CPack)
+
+set(CPACK_PACKAGE_NAME "autoalg-all")
+set(CPACK_PACKAGE_VENDOR "AutoAlg")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "AutoAlg input_sim + system_output cross-platform library")
+set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/hastws/easy_control")
+set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
+
+# 生成多种包：Windows/ZIP/NSIS，macOS/ZIP/TXZ，Linux/DEB
+set(CPACK_GENERATOR "ZIP;TXZ;DEB;NSIS")
+
+# Debian/Ubuntu
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "AutoAlg <you@autoalg.com>")
+set(CPACK_DEBIAN_PACKAGE_SECTION "libs")
+set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+# 让 .deb 安装到 /usr（仅对打包有效，不影响本地 install）
+if (UNIX AND NOT APPLE)
+    set(CPACK_SET_DESTDIR ON)
+    set(CMAKE_INSTALL_PREFIX "/usr")
+endif ()
