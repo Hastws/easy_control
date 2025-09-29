@@ -130,14 +130,31 @@ if (INPUT_STRICT_WARNINGS)
 endif ()
 
 if (APPLE)
-    find_library(APP_SERVICES_FRAMEWORK ApplicationServices)
-    find_library(FOUNDATION_FRAMEWORK Foundation)
-    if (NOT APP_SERVICES_FRAMEWORK OR NOT FOUNDATION_FRAMEWORK)
-        message(FATAL_ERROR "macOS frameworks not found: ApplicationServices / Foundation")
+    # 基础框架
+    find_library(APP_SERVICES_FRAMEWORK ApplicationServices REQUIRED)
+    find_library(FOUNDATION_FRAMEWORK Foundation REQUIRED)
+
+    # 首选 HIToolbox，找不到就退回 Carbon（两个都不在就提示装 Xcode CLT）
+    find_library(HITOOLBOX_FRAMEWORK HIToolbox)
+    if (NOT HITOOLBOX_FRAMEWORK)
+        find_library(CARBON_FRAMEWORK Carbon)
+        if (CARBON_FRAMEWORK)
+            set(HITOOLBOX_FRAMEWORK "${CARBON_FRAMEWORK}")
+            message(STATUS "HIToolbox not found; falling back to Carbon: ${HITOOLBOX_FRAMEWORK}")
+        else ()
+            message(FATAL_ERROR
+                    "HIToolbox/Carbon framework not found.\n"
+                    "Please install Xcode Command Line Tools: `xcode-select --install`.\n"
+                    "If you use a custom SDK, ensure CMAKE_OSX_SYSROOT points to it.")
+        endif ()
+    else ()
+        message(STATUS "Using HIToolbox: ${HITOOLBOX_FRAMEWORK}")
     endif ()
+
     target_link_libraries(system_input INTERFACE
             "${APP_SERVICES_FRAMEWORK}"
             "${FOUNDATION_FRAMEWORK}"
+            "${HITOOLBOX_FRAMEWORK}"   # 这里可能是 HIToolbox 或 Carbon
     )
 elseif (WIN32)
     # target_link_libraries(system_input INTERFACE user32) # optional
