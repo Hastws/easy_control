@@ -27,6 +27,8 @@
 #include "system_input.hpp"
 #include "system_output.hpp"
 
+#include <easy_control/version.h>
+
 using namespace autoalg;
 
 // ---------- Simple BMP writer (BGRA, 32-bit, top-down) ----------
