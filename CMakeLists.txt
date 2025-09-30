@@ -396,37 +396,48 @@ endif ()
 message(STATUS "===========================================")
 
 # =========================
-# CPack（跨平台打包：ZIP/DEB/NSIS/Txz）
+# CPack（跨平台打包）
 # =========================
 
+# —— 基本元数据（必须在 include(CPack) 之前）——
 set(CPACK_PACKAGE_NAME "easy-control")
 set(CPACK_PACKAGE_VENDOR "AutoAlg")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "easy_control: system_input + system_output cross-platform library")
 set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/hastws/easy_control")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
-set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
+set(CPACK_PACKAGE_CONTACT "AutoAlg <hastws@hotmail.com>")   # ★ 建议同时设置
 
 # 让包名包含提交/dirty 后缀（若存在）
 if (AUTOALG_PKG_SUFFIX)
     set(CPACK_PACKAGE_VERSION_SUFFIX "${AUTOALG_PKG_SUFFIX}")
 endif ()
 
-# include(CPack) 之后添加
+# 统一自定义输出文件名，避免跨平台撞名
+#（注意：必须在 include(CPack) 之前设置）
 set(CPACK_PACKAGE_FILE_NAME
         "${CPACK_PACKAGE_NAME}-${AUTOALG_VERSION_FULL}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
 
+# —— 平台选择生成器 ——
+if (APPLE)
+    # macOS：系统安装包 + 拖拽 DMG，同时也保留 ZIP/TXZ（可按需删减）
+    set(CPACK_GENERATOR "productbuild;DragNDrop;ZIP;TXZ")
+elseif (WIN32)
+    # Windows：NSIS 安装器（可加 ZIP 备份）
+    set(CPACK_GENERATOR "NSIS;ZIP")
+else ()
+    # Linux：DEB + TGZ 压缩包
+    set(CPACK_GENERATOR "DEB;TGZ")
+endif ()
 
-# 生成多种包：Windows/ZIP/NSIS，macOS/ZIP/TXZ，Linux/DEB
-set(CPACK_GENERATOR "ZIP;TXZ;DEB;NSIS")
-
-# Debian/Ubuntu
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "AutoAlg <hastws@hotmail.com>")
+# —— Debian/Ubuntu 细节（仅 Linux 生效）——
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "AutoAlg <hastws@hotmail.com>")  # ★ Debian 必需字段之一
 set(CPACK_DEBIAN_PACKAGE_SECTION "libs")
-set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
-# 让 .deb 安装到 /usr（仅对打包有效，不影响本地 install）
+set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)   # 自动解析依赖（需 dpkg-dev）
+
+# 让 .deb 安装到 /usr（仅对打包有效，不影响本地 cmake --install 默认前缀）
 if (UNIX AND NOT APPLE)
     set(CPACK_SET_DESTDIR ON)
     set(CMAKE_INSTALL_PREFIX "/usr")
 endif ()
 
-include(CPack)
+include(CPack)  # ★ 所有 CPACK_* 都要在它之前设置
