@@ -19,6 +19,7 @@ option(INPUT_BACKEND_WAYLAND_WLR "Use Wayland (wlroots virtual pointer/keyboard)
 option(INPUT_BACKEND_UINPUT "Use uinput backend on Linux" OFF)
 option(INPUT_STRICT_WARNINGS "Enable strict warnings for input_sim" ON)
 option(AUTOALG_USE_WAYLAND_PORTAL "Use xdg-desktop-portal on Linux/Wayland for screen capture" OFF)
+option(EASY_CONTROL_BUILD_DEMOS "Build demos (not installed/exported)" ON)
 
 # =========================
 # input_sim: header-only
@@ -29,6 +30,8 @@ target_include_directories(input_sim INTERFACE
         $<INSTALL_INTERFACE:include>
 )
 target_compile_features(input_sim INTERFACE cxx_std_17)
+# 统一命名空间别名
+add_library(easy_control::input_sim ALIAS input_sim)
 
 if (MSVC)
     target_compile_definitions(input_sim INTERFACE UNICODE _UNICODE WIN32_LEAN_AND_MEAN NOMINMAX)
@@ -53,7 +56,7 @@ if (APPLE)
             "${FOUNDATION_FRAMEWORK}"
     )
 elseif (WIN32)
-    # target_link_libraries(input_sim INTERFACE user32) # 可按需
+    # target_link_libraries(input_sim INTERFACE user32) # optional
 elseif (UNIX AND NOT APPLE)
     include(CheckIncludeFile)
     include(FindPkgConfig)
@@ -120,6 +123,7 @@ if (APPLE)
             ${APP_SERVICES_FRAMEWORK}
             ${FOUNDATION_FRAMEWORK}
     )
+    add_library(easy_control::mac_bridge ALIAS mac_bridge)
 endif ()
 
 # 2) 主捕获库
@@ -128,6 +132,7 @@ target_include_directories(system_output PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
 )
+add_library(easy_control::system_output ALIAS system_output)
 
 # Windows 源
 if (WIN32)
@@ -178,108 +183,91 @@ if (APPLE)
     target_link_libraries(system_output PUBLIC mac_bridge)
 endif ()
 
-# ===== demo（不安装） =====
-add_executable(system_output_test demo/system_output_test.cpp)
-target_link_libraries(system_output_test PRIVATE system_output)
+# ===== demos（不安装/不导出） =====
+if (EASY_CONTROL_BUILD_DEMOS)
+    add_executable(system_output_test demo/system_output_test.cpp)
+    target_link_libraries(system_output_test PRIVATE system_output)
 
-add_executable(system_input_test demo/system_input_test.cpp)
-target_link_libraries(system_input_test PRIVATE input_sim)
-if (APPLE)
-    target_link_libraries(system_input_test PRIVATE
-            ${APP_SERVICES_FRAMEWORK}
-            ${FOUNDATION_FRAMEWORK}
-    )
-endif ()
+    add_executable(system_input_test demo/system_input_test.cpp)
+    target_link_libraries(system_input_test PRIVATE input_sim)
+    if (APPLE)
+        target_link_libraries(system_input_test PRIVATE
+                ${APP_SERVICES_FRAMEWORK}
+                ${FOUNDATION_FRAMEWORK}
+        )
+    endif ()
 
-add_executable(joint_test demo/joint_test.cpp)
-target_link_libraries(joint_test PRIVATE input_sim system_output)
-if (APPLE)
-    find_library(FW_APP_SERVICES ApplicationServices)
-    find_library(FW_FOUNDATION Foundation)
-    find_library(FW_CARBON Carbon)
-    target_link_libraries(joint_test PRIVATE
-            ${APP_SERVICES_FRAMEWORK}
-            ${FOUNDATION_FRAMEWORK}
-            ${FW_APP_SERVICES}
-            ${FW_FOUNDATION}
-            ${FW_CARBON}
-    )
+    add_executable(joint_test demo/joint_test.cpp)
+    target_link_libraries(joint_test PRIVATE input_sim system_output)
+    if (APPLE)
+        find_library(FW_APP_SERVICES ApplicationServices)
+        find_library(FW_FOUNDATION Foundation)
+        find_library(FW_CARBON Carbon)
+        target_link_libraries(joint_test PRIVATE
+                ${APP_SERVICES_FRAMEWORK}
+                ${FOUNDATION_FRAMEWORK}
+                ${FW_APP_SERVICES}
+                ${FW_FOUNDATION}
+                ${FW_CARBON}
+        )
+    endif ()
 endif ()
 
 # =========================
-# Install & Package
+# Install & Package (ONLY libs; export as easy_control)
 # =========================
 include(GNUInstallDirs)
 
 # 头文件
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-# input_sim：沿用你已有的导出
-install(TARGETS input_sim EXPORT input_simTargets)
-install(EXPORT input_simTargets
-        FILE input_simTargets.cmake
-        NAMESPACE autoalg::
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/autoalg_input_sim
-)
-
-# 其余库参与 autoalg_all 的导出
-install(TARGETS system_output
-        EXPORT autoalg_allTargets
+# 统一导出：只导出库（不含 demos）
+install(TARGETS input_sim system_output
+        EXPORT easy_controlTargets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 if (APPLE)
     install(TARGETS mac_bridge
-            EXPORT autoalg_allTargets
+            EXPORT easy_controlTargets
             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     )
 endif ()
 
-install(EXPORT autoalg_allTargets
-        FILE autoalg_allTargets.cmake
-        NAMESPACE autoalg::
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/autoalg_all
+# 安装导出文件（easy_control）
+install(EXPORT easy_controlTargets
+        FILE easy_controlTargets.cmake
+        NAMESPACE easy_control::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/easy_control
 )
 
-# 生成 Config.cmake + Version.cmake（主包：autoalg_all）
+# 生成并安装 easy_control 的 Config & Version
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
-        "${CMAKE_CURRENT_BINARY_DIR}/autoalg_allConfigVersion.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/easy_controlConfigVersion.cmake"
         VERSION ${PROJECT_VERSION}
         COMPATIBILITY SameMajorVersion
 )
 configure_package_config_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/autoalg_allConfig.cmake.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/autoalg_allConfig.cmake"
-        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/autoalg_all
+        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/easy_controlConfig.cmake.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/easy_controlConfig.cmake"
+        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/easy_control
         NO_CHECK_REQUIRED_COMPONENTS_MACRO
 )
 install(FILES
-        "${CMAKE_CURRENT_BINARY_DIR}/autoalg_allConfig.cmake"
-        "${CMAKE_CURRENT_BINARY_DIR}/autoalg_allConfigVersion.cmake"
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/autoalg_all
-)
-
-# 你已有的 input_sim Config（保持）
-configure_package_config_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/autoalg_input_simConfig.cmake.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/autoalg_input_simConfig.cmake"
-        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/autoalg_input_sim
-        NO_CHECK_REQUIRED_COMPONENTS_MACRO
-)
-install(FILES
-        "${CMAKE_CURRENT_BINARY_DIR}/autoalg_input_simConfig.cmake"
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/autoalg_input_sim
+        "${CMAKE_CURRENT_BINARY_DIR}/easy_controlConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/easy_controlConfigVersion.cmake"
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/easy_control
 )
 
 # =========================
 # Messages
 # =========================
 message(STATUS "===========================================")
-message(STATUS " input_sim configured:")
+message(STATUS " easy_control configured:")
 message(STATUS "   Platform: ${CMAKE_SYSTEM_NAME}")
 if (UNIX AND NOT APPLE)
     if (INPUT_BACKEND_WAYLAND_WLR)
@@ -293,7 +281,7 @@ endif ()
 message(STATUS "-------------------------------------------")
 message(STATUS " screen_capture configured:")
 if (APPLE)
-    message(STATUS "   macOS: CoreGraphics + ApplicationServices + Foundation")
+    message(STATUS "   macOS: CoreGraphics + ApplicationServices + Foundation + ScreenCaptureKit")
 elseif (UNIX AND NOT APPLE)
     if (AUTOALG_USE_WAYLAND_PORTAL)
         message(STATUS "   Linux: Wayland portal (gio/glib + stb_image)")
@@ -310,9 +298,9 @@ message(STATUS "===========================================")
 # =========================
 include(CPack)
 
-set(CPACK_PACKAGE_NAME "autoalg-all")
+set(CPACK_PACKAGE_NAME "easy-control")
 set(CPACK_PACKAGE_VENDOR "AutoAlg")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "AutoAlg input_sim + system_output cross-platform library")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "easy_control: input_sim + system_output cross-platform library")
 set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/hastws/easy_control")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
@@ -321,7 +309,7 @@ set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
 set(CPACK_GENERATOR "ZIP;TXZ;DEB;NSIS")
 
 # Debian/Ubuntu
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "AutoAlg <you@autoalg.com>")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "AutoAlg <hastws@hotmail.com>")
 set(CPACK_DEBIAN_PACKAGE_SECTION "libs")
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 # 让 .deb 安装到 /usr（仅对打包有效，不影响本地 install）
