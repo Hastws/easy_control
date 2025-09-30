@@ -2,7 +2,7 @@ name: build-and-release
 
 on:
   push:
-    tags: [ "v*" ]          # 打 tag 如 v0.0.6 触发
+    tags: [ "v*" ]
   workflow_dispatch:
 
 permissions:
@@ -25,7 +25,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
-          fetch-depth: 0      # 确保 git describe 能拿到 tags
+          fetch-depth: 0
 
       # ---------- Deps ----------
       - name: Deps (Ubuntu)
@@ -48,32 +48,36 @@ jobs:
         shell: pwsh
         run: choco install -y ninja nsis
 
+      # ---------- Choose CPack generator per-OS ----------
+      - name: Select CPack generator
+        id: gen
+        shell: bash
+        run: |
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            echo "CPACK_GEN=DEB;TGZ" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            echo "CPACK_GEN=productbuild;DragNDrop" >> "$GITHUB_OUTPUT"
+          else
+            echo "CPACK_GEN=NSIS" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Using CPack generators: $(cat $GITHUB_OUTPUT)"
+
       # ---------- Configure ----------
       - name: Configure
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DCPACK_GENERATOR="${{ steps.gen.outputs.CPACK_GEN }}"
 
       # ---------- Build ----------
       - name: Build
         run: cmake --build build --config Release --parallel
 
-      # ---------- Package (OS-specific) ----------
-      - name: Package on Linux (.deb + .tar.gz)
-        if: startsWith(matrix.os, 'ubuntu')
+      # ---------- Package (call cpack; generators already set) ----------
+      - name: Package
         run: |
-          cmake --build build --target package --config Release -- \
-            -DCPACK_GENERATOR=DEB;TGZ
-
-      - name: Package on macOS (.pkg + .dmg)
-        if: startsWith(matrix.os, 'macos')
-        run: |
-          cmake --build build --target package --config Release -- \
-            -DCPACK_GENERATOR=productbuild;DragNDrop
-
-      - name: Package on Windows (NSIS .exe)
-        if: startsWith(matrix.os, 'windows')
-        run: |
-          cmake --build build --target package --config Release -- \
-            -DCPACK_GENERATOR=NSIS
+          cpack --config build/CPackConfig.cmake -C Release
+        # 也可单发某个：cpack -G DEB --config build/CPackConfig.cmake -C Release
 
       # 可视化
       - name: List outputs
@@ -119,7 +123,6 @@ jobs:
           set -euo pipefail
           mkdir -p dist/release
 
-          # 只收集预期的发行包类型；不要把 demo 可执行文件带上
           mapfile -t files < <(find dist -type f \( \
               -name 'easy_control-*.deb' -o \
               -name 'easy_control-*.tar.gz' -o \
@@ -131,7 +134,6 @@ jobs:
           echo "Found packages:"
           printf '  %s\n' "${files[@]}"
 
-          # 扁平化到 dist/release；若重名，用来源目录作为前缀去重
           for f in "${files[@]}"; do
             base="$(basename "$f")"
             target="dist/release/${base}"
@@ -162,7 +164,6 @@ jobs:
             echo "$f"
           done
           echo "EOF" >> "$GITHUB_OUTPUT"
-
           echo "== Will upload:"
           printf '  %s\n' ${{ steps.collect.outputs.files || '' }} || true
 
@@ -171,7 +172,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          fail_on_unmatched_files: true     # 现在安全：我们只传确实存在的文件
+          fail_on_unmatched_files: true
           files: ${{ steps.collect.outputs.files }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
