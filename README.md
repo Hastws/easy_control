@@ -317,3 +317,5 @@ int main() {
 ## License
 
 MIT © 2025 AutoAlg (autoalg.com)
+
+Author: Chunzhi Qu.
