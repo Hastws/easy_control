@@ -314,6 +314,30 @@ if (EASY_CONTROL_BUILD_DEMOS)
                 ${FW_CARBON}
         )
     endif ()
+
+    # 流式控制演示（云游戏/远程桌面模拟）
+    add_executable(streaming_demo demo/streaming_control_demo.cpp)
+    target_link_libraries(streaming_demo PRIVATE system_input system_output)
+    find_package(Threads REQUIRED)
+    target_link_libraries(streaming_demo PRIVATE Threads::Threads)
+    if (APPLE)
+        target_link_libraries(streaming_demo PRIVATE
+                ${APP_SERVICES_FRAMEWORK}
+                ${FOUNDATION_FRAMEWORK}
+                ${FW_CARBON}
+        )
+    endif ()
+
+    # RTS游戏控制演示（星际争霸风格）
+    add_executable(rts_demo demo/rts_game_demo.cpp)
+    target_link_libraries(rts_demo PRIVATE system_input system_output)
+    if (APPLE)
+        target_link_libraries(rts_demo PRIVATE
+                ${APP_SERVICES_FRAMEWORK}
+                ${FOUNDATION_FRAMEWORK}
+                ${FW_CARBON}
+        )
+    endif ()
 endif ()
 
 # =========================
