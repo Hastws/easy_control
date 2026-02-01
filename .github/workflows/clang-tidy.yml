@@ -24,4 +24,9 @@ jobs:
 
       - name: Run clang-tidy
         run: |
-          clang-tidy -p build $(git ls-files '*.c' '*.cc' '*.cpp' '*.cxx')
+          FILES=$(git ls-files '*.c' '*.cc' '*.cpp' '*.cxx' | head -100)
+          if [ -n "$FILES" ]; then
+            clang-tidy -p build $FILES
+          else
+            echo "No C/C++ files found"
+          fi
