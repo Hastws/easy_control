@@ -349,4 +349,4 @@ EC_INLINE std::filesystem::path CurrentDir() {
 }
 }  // namespace autoalg
 
-#endif  // AUTOALG_PLATFORM_COMMON_HPP
+#endif  // EASY_CONTROL_INCLUDE_COMMON_HPP

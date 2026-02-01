@@ -71,6 +71,13 @@ namespace autoalg {
 
 class SystemInput {
  public:
+  // Non-copyable (holds system resources)
+  SystemInput(const SystemInput&) = delete;
+  SystemInput& operator=(const SystemInput&) = delete;
+  // Movable
+  SystemInput(SystemInput&&) = default;
+  SystemInput& operator=(SystemInput&&) = default;
+
   enum MouseButton : int { kLeft = 0, kRight = 1, kMiddle = 2 };
 
   enum Mod : uint64_t {
@@ -335,7 +342,8 @@ class SystemInput {
 #elif defined(INPUT_BACKEND_UINPUT)
     SendUinputKey_(LinuxBtnCode_(button), 0);
     SendUinputSync_();
-    else if (dpy_) {
+#else
+    if (dpy_) {
       XTestFakeButtonEvent(dpy_, XButtonFromGeneric_(button), False, CurrentTime);
       XFlush(dpy_);
     }
@@ -535,7 +543,7 @@ class SystemInput {
     }
     if (dx) {
       int n = std::abs(dx);
-      for (int i = 0; i + n; ++i) {
+      for (int i = 0; i < n; ++i) {
         INPUT in{};
         in.type = INPUT_MOUSE;
         in.mi.dwFlags = MOUSEEVENTF_HWHEEL;
@@ -957,7 +965,7 @@ class SystemInput {
   int mon_width_px_{0};  // 显示器像素宽高（可用于裁剪）
   int mon_height_px_{0};
 
-  EC_INLINE void EmitDragPath_(int start_x, int start_y, int end_x, int end_y, int button) {
+  EC_INLINE void EmitDragPath_(int start_x, int start_y, int end_x, int end_y, [[maybe_unused]] int button) {
     const int dx = end_x - start_x, dy = end_y - start_y;
     const int dist = std::max(std::abs(dx), std::abs(dy));
     const int kStepPx = 6;

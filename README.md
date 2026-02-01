@@ -146,7 +146,7 @@ Use it in downstream projects by pointing `CMAKE_PREFIX_PATH` to that prefix.
 
 CMake options (all default to **OFF** unless noted):
 
-- `EASY_CONTROL_BUILD_DEMOS` (**ON**): build example executables (not installed).
+- `EASY_CONTROL_BUILD_DEMOS` (**OFF**): build example executables (not installed).
 - `INPUT_STRICT_WARNINGS` (**ON**): enable strict warnings for `system_input`.
 - Linux input backends (choose one if desired):
   - `INPUT_BACKEND_WAYLAND_WLR` (Wayland wlroots virtual input)  
