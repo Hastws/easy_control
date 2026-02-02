@@ -454,7 +454,7 @@ set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)   # 自动解析依赖（需 dpkg-dev）
 # 让 .deb 安装到 /usr（仅对打包有效，不影响本地 cmake --install 默认前缀）
 if (UNIX AND NOT APPLE)
     set(CPACK_SET_DESTDIR ON)
-    set(CMAKE_INSTALL_PREFIX "/usr")
+    set(CPACK_PACKAGING_INSTALL_PREFIX "/usr")
 endif ()
 
 include(CPack)  # ★ 所有 CPACK_* 都要在它之前设置

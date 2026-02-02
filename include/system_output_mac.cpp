@@ -20,8 +20,11 @@ bool SystemOutput::CaptureScreenWithCursor(int display_index, ImageRGBA &out_ima
 }
 
 int SystemOutput::GetDisplayCount() {
-  // For simplicity return 1; actual multi-display supported in bridge by index.
-  return 1;
+  uint32_t count = 0;
+  if (CGGetActiveDisplayList(0, nullptr, &count) == kCGErrorSuccess && count > 0) {
+    return static_cast<int>(count);
+  }
+  return 1;  // Fallback to 1 if query fails
 }
 
 std::string SystemOutput::GetDisplayInfo(const int display_index) { return "macOS Display " + std::to_string(display_index); }
