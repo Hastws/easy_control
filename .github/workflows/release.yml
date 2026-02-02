@@ -33,7 +33,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build pkg-config nsis dpkg-dev \
-                                  libx11-dev libxtst-dev libxrandr-dev libxfixes-dev
+                                  libx11-dev libxtst-dev libxrandr-dev libxfixes-dev \
+                                  libxkbcommon-dev libxkbcommon-x11-dev
           # 如启用 Wayland portal：
           # sudo apt-get install -y libwayland-dev libglib2.0-dev
 
@@ -58,7 +59,7 @@ jobs:
           elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
             echo "CPACK_GEN=productbuild;DragNDrop" >> "$GITHUB_OUTPUT"
           else
-            echo "CPACK_GEN=NSIS" >> "$GITHUB_OUTPUT"
+            echo "CPACK_GEN=NSIS;ZIP" >> "$GITHUB_OUTPUT"
           fi
           echo "Using CPack generators: $(cat $GITHUB_OUTPUT)"
 
@@ -94,18 +95,15 @@ jobs:
         with:
           name: ${{ matrix.os }}-packages
           path: |
-            # Linux
             build/*.deb
             build/*.tar.gz
-            build/_CPack_Packages/**/DEB/*.deb
-            build/_CPack_Packages/**/TGZ/*.tar.gz
-            # macOS
             build/*.pkg
             build/*.dmg
+            build/*easy_control-*.exe
+            build/_CPack_Packages/**/DEB/*.deb
+            build/_CPack_Packages/**/TGZ/*.tar.gz
             build/_CPack_Packages/**/productbuild/*.pkg
             build/_CPack_Packages/**/DragNDrop/*.dmg
-            # Windows（仅安装器；不带 demo exe）
-            build/*easy_control-*.exe
           if-no-files-found: warn
 
   release:

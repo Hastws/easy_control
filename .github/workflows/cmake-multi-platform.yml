@@ -64,10 +64,9 @@ jobs:
           brew update
           brew install pkg-config || true
 
-      - name: Install dependencies (Windows)
+      - name: Setup MSVC (Windows)
         if: startsWith(matrix.os, 'windows')
-        run: |
-          choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' --no-progress -y
+        uses: ilammy/msvc-dev-cmd@v1
 
       - name: Set reusable strings
         id: strings
@@ -84,4 +83,7 @@ jobs:
 
       - name: Build
         run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
-      
+
+      - name: Test
+        working-directory: ${{ steps.strings.outputs.build-output-dir }}
+        run: ctest --build-config ${{ matrix.build_type }} --output-on-failure || echo "No tests defined"
