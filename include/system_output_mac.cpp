@@ -4,6 +4,7 @@
 
 #ifdef __APPLE__
 
+#include <CoreGraphics/CoreGraphics.h>
 #include <string>
 
 #include "system_output.hpp"
